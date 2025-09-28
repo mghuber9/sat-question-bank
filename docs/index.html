@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SAT Question Bank — Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Minimal styling -->
+  <style>
+    :root { --bg:#0b1020; --card:#121a2c; --text:#e8edf7; --muted:#9fb0d0; --accent:#5ea0ff; }
+    html,body { margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:18px 20px; border-bottom:1px solid #20304f; display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+    header h1 { margin:0 16px 0 0; font-size:20px; font-weight:700; }
+    label { font-size:14px; color:var(--muted); margin-right:10px; }
+    select,input,button { background:#0f1726; color:var(--text); border:1px solid #253454; border-radius:8px; padding:8px 10px; font-size:14px; }
+    button { cursor:pointer; }
+    button.primary { background:var(--accent); color:#081120; border:none; }
+    .wrap { padding:20px; max-width:980px; margin:0 auto; }
+    .filters { display:flex; gap:10px; flex-wrap:wrap; }
+    .chips { display:flex; gap:6px; }
+    .chip { padding:4px 8px; border:1px solid #2a3a5c; border-radius:999px; cursor:pointer; user-select:none; }
+    .chip.active { background:#1d2944; border-color:#3b5aa0; color:#d9e8ff; }
+    .grid { display:grid; gap:14px; }
+    .card { background:var(--card); border:1px solid #20304f; border-radius:14px; padding:16px; }
+    .id { font-size:12px; color:var(--muted); }
+    .stem { font-size:16px; line-height:1.45; white-space:pre-wrap; }
+    .ans { margin-top:10px; font-size:14px; color:#b5c7ea; }
+    details { margin-top:10px; }
+    footer { padding:18px 20px 40px; color:var(--muted); }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .spacer { flex:1; }
+    .muted { color:var(--muted); }
+    .hint { font-size:12px; color:#9fb0d0; margin-left:6px; }
+    .sr { position:absolute; left:-9999px; }
+  </style>
+
+  <!-- KaTeX (optional — will only render if your items use TeX delimiters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <!-- Seeded RNG -->
+  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>SAT Question Bank — Viewer</h1>
+  <div class="filters">
+    <label>Mode
+      <select id="mode">
+        <option value="random">Random (seeded)</option>
+        <option value="ordered">In order</option>
+      </select>
+    </label>
+
+    <label>Bank
+      <select id="bank">
+        <option value="HOA">HOA</option>
+        <option value="PAM">PAM</option>
+        <option value="PSDA">PSDA</option>
+        <option value="GEOT">GEOT</option>
+        <option value="ALL">All</option>
+      </select>
+    </label>
+
+    <div id="randomControls" class="row">
+      <label>Count <input id="count" type="number" value="10" min="1" style="width:80px"></label>
+      <label>Seed <input id="seed" type="text" placeholder="e.g. demo-2025-09-28" style="width:180px"></label>
+    </div>
+
+    <div id="orderedControls" class="row" style="display:none">
+      <label>Start index <input id="start" type="number" value="0" min="0" style="width:100px"></label>
+      <label>Per page <input id="per" type="number" value="10" min="1" style="width:80px"></label>
+      <span class="hint">Uses file order (stable); seeded variants by id.</span>
+    </div>
+
+    <div class="row">
+      <span class="muted">Difficulty:</span>
+      <div id="diffs" class="chips" role="group" aria-label="difficulty">
+        <span class="chip active" data-d="E" tabindex="0">E</span>
+        <span class="chip active" data-d="M" tabindex="0">M</span>
+        <span class="chip active" data-d="H" tabindex="0">H</span>
+      </div>
+    </div>
+
+    <button id="go" class="primary">Generate</button>
+    <button id="share">Copy link</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="status" class="muted"></div>
+  <div id="list" class="grid"></div>
+</main>
+
+<footer class="wrap">
+  <div class="muted">
+    Tip: Random mode is reproducible with the same seed. Ordered mode seeds each item as <code>id</code>
+    so variants are stable; use “Re-roll” to re-generate a variant of the same template.
+  </div>
+</footer>
+
+<script type="module">
+/*** ---------- tiny generator (browser version) ---------- ***/
+function makeRng(seed) {
+  const r = window.seedrandom(String(seed));
+  return r.quick ? () => r.quick() : () => r(); // fallback if quick() not present
+}
+function pick(spec, rnd) {
+  if (!spec) throw new Error("Bad param spec");
+  if (Array.isArray(spec.values)) {
+    const arr = spec.values;
+    return arr[Math.floor(rnd() * arr.length)];
+  }
+  const min = spec.min ?? 0, max = spec.max ?? min;
+  const exclude = new Set(spec.exclude || []);
+  const isInt = Number.isInteger(min) && Number.isInteger(max);
+  for (let i = 0; i < 400; i++) {
+    const v = isInt ? Math.floor(min + rnd() * (max - min + 1)) : (min + rnd() * (max - min));
+    if (!exclude.has(v)) return v;
+  }
+  throw new Error("Could not sample param (too restrictive).");
+}
+function renderStem(stem, vars) {
+  return String(stem || "").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g, (_, k) => (k in vars ? String(vars[k]) : `{{${k}}}`));
+}
+function evalExpr(expr, scope) {
+  const keys = ["Math","Number", ...Object.keys(scope)];
+  const vals = [Math, Number, ...Object.values(scope)];
+  if (typeof expr !== "string") return expr;
+  if (/[;{}[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: " + expr);
+  return Function(...keys, `"use strict"; return (${expr});`)(...vals);
+}
+function safeEvalOrLiteral(expr, scope) {
+  if (typeof expr !== "string") return expr;
+  const hasOp = /[+\-*/^()=<>]|Math\./.test(expr);
+  try {
+    if (hasOp) return evalExpr(expr, scope);
+    if (expr in scope) return scope[expr];
+    return expr;
+  } catch { return expr; }
+}
+function generateItem(template, seed="demo") {
+  const rnd = makeRng(seed);
+  const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
+  const MAX_TRIES = 250;
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const P = {};
+    for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
+    const D = {};
+    let okDer = true;
+    for (const [k, expr] of Object.entries(derived)) {
+      try { D[k] = evalExpr(expr, { ...P, ...D }); } catch { okDer = false; break; }
+    }
+    if (!okDer) continue;
+    let ok = true;
+    for (const c of constraints) {
+      try { if (!evalExpr(c, { ...P, ...D })) { ok = false; break; } }
+      catch { ok = false; break; }
+    }
+    if (!ok) continue;
+    const ansVal = safeEvalOrLiteral(answer, { ...P, ...D });
+    const opts = [];
+    for (const d of distractors) {
+      const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansVal });
+      if (String(v) !== String(ansVal)) opts.push(v);
+    }
+    return { stem: renderStem(stem, { ...P, ...D }), params: P, derived: D, answer: ansVal, distractors: opts };
+  }
+  throw new Error("Constraint not satisfiable after multiple attempts");
+}
+/*** ---------- data + UI logic ---------- ***/
+const FILES = {
+  HOA: "data/MASTER_HOA_SAT.json",
+  PAM: "data/MASTER_PAM_SAT.json",
+  PSDA: "data/MASTER_PSDA_SAT.json",
+  GEOT: "data/MASTER_GEOT_SAT.json"
+};
+const els = {
+  mode: document.getElementById("mode"),
+  bank: document.getElementById("bank"),
+  count: document.getElementById("count"),
+  seed: document.getElementById("seed"),
+  start: document.getElementById("start"),
+  per: document.getElementById("per"),
+  randomControls: document.getElementById("randomControls"),
+  orderedControls: document.getElementById("orderedControls"),
+  diffs: document.getElementById("diffs"),
+  go: document.getElementById("go"),
+  share: document.getElementById("share"),
+  list: document.getElementById("list"),
+  status: document.getElementById("status")
+};
+
+function getActiveDiffs() {
+  return Array.from(els.diffs.querySelectorAll(".chip.active")).map(x => x.dataset.d);
+}
+function toggleChip(e) {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  chip.classList.toggle("active");
+}
+els.diffs.addEventListener("click", toggleChip);
+els.diffs.addEventListener("keydown", (e)=>{ if (e.key===" "||e.key==="Enter") { e.preventDefault(); toggleChip(e); } });
+
+els.mode.addEventListener("change", () => {
+  const ordered = els.mode.value === "ordered";
+  els.randomControls.style.display = ordered ? "none" : "flex";
+  els.orderedControls.style.display = ordered ? "flex" : "none";
+});
+
+function seededShuffle(arr, seed) {
+  const rnd = makeRng(seed);
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--) {
+    const j = Math.floor(rnd()* (i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function q(key, fallback=null){ return new URLSearchParams(location.search).get(key) ?? fallback; }
+function syncFromQuery() {
+  const mode = q("mode","random"); els.mode.value = mode;
+  const bank = q("bank","HOA"); els.bank.value = bank;
+  const count = +q("n","10"); els.count.value = count;
+  const seed = q("seed",""); els.seed.value = seed;
+  const start = +q("start","0"); els.start.value = start;
+  const per = +q("per","10"); els.per.value = per;
+  const dif = (q("d","EMH")||"").split("").filter(Boolean);
+  els.diffs.querySelectorAll(".chip").forEach(c=> c.classList.toggle("active", dif.includes(c.dataset.d)));
+  els.mode.dispatchEvent(new Event("change"));
+}
+function updateQuery(params) {
+  const u = new URL(location.href);
+  for (const [k,v] of Object.entries(params)) u.searchParams.set(k, v);
+  history.replaceState(null,"",u.toString());
+}
+
+async function loadBanks(which) {
+  const names = which==="ALL" ? Object.keys(FILES) : [which];
+  const results = await Promise.all(names.map(n => fetch(FILES[n]).then(r=>r.json())));
+  return results.flat();
+}
+
+function renderKaTeX(container) {
+  if (window.renderMathInElement) {
+    window.renderMathInElement(container, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\[", right: "\\]", display: true},
+        {left: "\\(", right: "\\)", display: false},
+        {left: "$", right: "$", display: false}
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+async function generate() {
+  els.status.textContent = "Loading…";
+  const mode = els.mode.value;
+  const bank = els.bank.value;
+  const diffs = getActiveDiffs();
+  const n = Math.max(1, parseInt(els.count.value || "10", 10));
+  const seed = els.seed.value || new Date().toISOString().slice(0,10);
+  const start = Math.max(0, parseInt(els.start.value || "0", 10));
+  const per = Math.max(1, parseInt(els.per.value || "10", 10));
+
+  updateQuery({mode, bank, n, seed, start, per, d: diffs.join("")});
+
+  let items = (await loadBanks(bank)).filter(it => diffs.includes(it.difficulty || "M"));
+
+  // Stable order for "ordered" (by domain/subtopic/id); otherwise we shuffle deterministically.
+  if (mode === "ordered") {
+    items.sort((a,b) => (a.domain||"").localeCompare(b.domain||"") ||
+                        (a.subtopic||"").localeCompare(b.subtopic||"") ||
+                        (a.id||"").localeCompare(b.id||""));
+    items = items.slice(start, start + per);
+  } else {
+    const shuffled = seededShuffle(items, seed + ":list");
+    items = shuffled.slice(0, Math.min(n, shuffled.length));
+  }
+
+  // Render
+  els.list.innerHTML = "";
+  let ok=0, fail=0;
+  for (const it of items) {
+    const id = it.id || "(no-id)";
+    const variantSeed = (mode === "ordered") ? (id) : (seed + ":" + id);
+    let gen, err = null;
+    try { gen = generateItem(it.template, variantSeed); ok++; }
+    catch (e) { err = String(e.message || e); fail++; }
+
+    const card = document.createElement("div");
+    card.className = "card";
+    const stem = err ? `<div class="stem"><strong>⚠️ ${id}</strong><br>${err}</div>`
+                     : `<div class="stem">${gen.stem}</div>`;
+    const opts = (!err && gen.distractors && gen.distractors.length)
+      ? `<div class="muted" style="margin-top:8px">Choices (shuffled locally)</div>
+         <ul>${seededShuffle([gen.answer, ...gen.distractors], variantSeed + ":opts").map(o=>`<li>${o}</li>`).join("")}</ul>`
+      : "";
+
+    const expl = (!err && it.template && it.template.explanation)
+      ? `<details><summary>Explanation</summary><div class="ans">${it.template.explanation}</div></details>` : "";
+
+    const rerollBtn = (!err)
+      ? `<button class="reroll" data-id="${id}">Re-roll</button>`
+      : "";
+
+    card.innerHTML = `
+      <div class="row">
+        <div class="id">${id}</div>
+        <div class="spacer"></div>
+        ${rerollBtn}
+      </div>
+      ${stem}
+      <div class="ans"><strong>Answer:</strong> ${err ? "—" : gen.answer}</div>
+      ${opts}
+      ${expl}
+    `;
+    els.list.appendChild(card);
+  }
+
+  els.status.textContent = `${ok} rendered, ${fail} failed. ${mode==="random" ? `Seed: ${seed}` : ""}`;
+  renderKaTeX(document.body);
+
+  // Re-roll buttons
+  els.list.querySelectorAll("button.reroll").forEach(btn => {
+    btn.addEventListener("click", () => {
+      // In ordered mode, base seed is the id; append a bump to re-roll deterministically.
+      const id = btn.dataset.id;
+      const bump = Math.floor(Math.random()*1e6);
+      els.seed.value = (els.mode.value === "ordered") ? `reroll-${bump}` : (els.seed.value || `reroll-${bump}`);
+      generate();
+    });
+  });
+}
+
+els.go.addEventListener("click", generate);
+els.share.addEventListener("click", () => {
+  navigator.clipboard.writeText(location.href).then(()=> {
+    els.status.textContent = "Link copied to clipboard.";
+    setTimeout(()=> els.status.textContent = "", 1500);
+  });
+});
+
+// boot
+syncFromQuery();
+generate();
+</script>
+</body>
+</html>
