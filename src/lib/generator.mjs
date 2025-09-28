@@ -1,5 +1,7 @@
-import { makeRng } from "./rng.mjs";
+import seedrandom from "seedrandom";
 import { evalExpr } from "./eval.mjs";
+
+function makeRng(seed) { const r = seedrandom(String(seed)); return () => r.quick(); }
 
 function pick(spec, rnd) {
   if (!spec) throw new Error("Bad param spec");
@@ -28,32 +30,37 @@ export function generateItem(template, seed = "demo") {
   const rnd = makeRng(seed);
   const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
 
-  // 1) sample params
-  const P = {};
-  for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
+  const MAX_TRIES = 250;
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    // 1) sample params
+    const P = {};
+    for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
 
-  // 2) compute derived
-  const D = {};
-  for (const [k, expr] of Object.entries(derived)) D[k] = evalExpr(expr, { ...P, ...D });
+    // 2) compute derived
+    const D = {};
+    for (const [k, expr] of Object.entries(derived)) D[k] = evalExpr(expr, { ...P, ...D });
 
-  // 3) enforce constraints
-  for (const c of constraints) {
-    const ok = !!evalExpr(c, { ...P, ...D });
-    if (!ok) throw new Error("Constraint failed: " + c);
+    // 3) enforce constraints
+    let ok = true;
+    for (const c of constraints) {
+      if (!evalExpr(c, { ...P, ...D })) { ok = false; break; }
+    }
+    if (!ok) continue; // resample
+
+    // 4) compute answer/distractors
+    const ansVal = typeof answer === "string" ? evalExpr(answer, { ...P, ...D }) : answer;
+
+    const opts = [];
+    for (const d of distractors) {
+      const v = typeof d === "string" ? evalExpr(d, { ...P, ...D, ans: ansVal }) : d;
+      if (String(v) !== String(ansVal)) opts.push(v);
+    }
+
+    return {
+      stem: renderStem(stem, { ...P, ...D }),
+      params: P, derived: D,
+      answer: ansVal, distractors: opts
+    };
   }
-
-  // 4) compute answer/distractors
-  const ansVal = typeof answer === "string" ? evalExpr(answer, { ...P, ...D }) : answer;
-  const opts = [];
-  for (const d of distractors) {
-    const v = typeof d === "string" ? evalExpr(d, { ...P, ...D, ans: ansVal }) : d;
-    if (String(v) !== String(ansVal)) opts.push(v);
-  }
-
-  return {
-    stem: renderStem(stem, { ...P, ...D }),
-    params: P, derived: D,
-    answer: ansVal,
-    distractors: opts
-  };
+  throw new Error("Constraint not satisfiable after multiple attempts");
 }
