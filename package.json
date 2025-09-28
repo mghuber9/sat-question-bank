@@ -1,0 +1,12 @@
+{
+  "name": "sat-question-bank",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "snapshot": "node scripts/snapshot.mjs"
+  },
+  "dependencies": {
+    "seedrandom": "3.0.5"
+  }
+}
