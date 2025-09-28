@@ -97,260 +97,154 @@
 </footer>
 
 <script>
-/* -------- error surface so “nothing happens” becomes visible -------- */
+/* surface script errors in the UI */
 window.addEventListener('error', e => {
   const s = document.getElementById('status');
   if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
 });
 
-/*** ---------- deterministic RNG (no deps) ---------- ***/
-function cyrb128(str) {
-  let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
-  for (let i = 0, k; i < str.length; i++) {
-    k = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ k, 597399067);
-    h2 = Math.imul(h2 ^ k, 2869860233);
-    h3 = Math.imul(h3 ^ k, 951274213);
-    h4 = Math.imul(h4 ^ k, 2716044179);
-  }
-  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
-  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
-  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
-  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
-  return [(h1 ^ h2 ^ h3 ^ h4) >>> 0];
-}
+/*** deterministic RNG (no deps) ***/
+function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2= Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return [(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 
-/*** ---------- generator helpers ---------- ***/
-function pick(spec, rnd) {
-  if (!spec) throw new Error("Bad param spec");
-  if (Array.isArray(spec.values)) {
-    const arr = spec.values;
-    return arr[Math.floor(rnd() * arr.length)];
-  }
-  const min = spec.min ?? 0, max = spec.max ?? min;
-  const exclude = new Set(spec.exclude || []);
-  const isInt = Number.isInteger(min) && Number.isInteger(max);
-  for (let i = 0; i < 400; i++) {
-    const v = isInt ? Math.floor(min + rnd() * (max - min + 1)) : (min + rnd() * (max - min));
-    if (!exclude.has(v)) return v;
-  }
-  throw new Error("Could not sample param (too restrictive).");
-}
-function renderStem(stem, vars) {
-  return String(stem || "").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g, (_, k) => (k in vars ? String(vars[k]) : `{{${k}}}`));
-}
-function evalExpr(expr, scope) {
-  const keys = ["Math","Number", ...Object.keys(scope)];
-  const vals = [Math, Number, ...Object.values(scope)];
-  if (typeof expr !== "string") return expr;
-  if (/[;{}[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: " + expr);
-  return Function(...keys, `"use strict"; return (${expr});`)(...vals);
-}
-function safeEvalOrLiteral(expr, scope) {
-  if (typeof expr !== "string") return expr;
-  const hasOp = /[+\-*/^()=<>]|Math\./.test(expr);
-  try {
-    if (hasOp) return evalExpr(expr, scope);
-    if (expr in scope) return scope[expr];
-    return expr;
-  } catch { return expr; }
-}
-function generateItem(template, seed="demo") {
-  const rnd = makeRng(seed);
-  const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
-  const MAX_TRIES = 250;
-  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
-    const P = {};
-    for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
-    const D = {};
-    let okDer = true;
-    for (const [k, expr] of Object.entries(derived)) {
-      try { D[k] = evalExpr(expr, { ...P, ...D }); } catch { okDer = false; break; }
-    }
-    if (!okDer) continue;
-    let ok = true;
-    for (const c of constraints) {
-      try { if (!evalExpr(c, { ...P, ...D })) { ok = false; break; } }
-      catch { ok = false; break; }
-    }
-    if (!ok) continue;
-    const ansVal = safeEvalOrLiteral(answer, { ...P, ...D });
-    const opts = [];
-    for (const d of distractors) {
-      const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansVal });
-      if (String(v) !== String(ansVal)) opts.push(v);
-    }
-    return { stem: renderStem(stem, { ...P, ...D }), params: P, derived: D, answer: ansVal, distractors: opts };
-  }
-  throw new Error("Constraint not satisfiable after multiple attempts");
-}
+/*** generator helpers ***/
+function pick(spec,rnd){if(!spec)throw new Error("Bad param spec");if(Array.isArray(spec.values)){const a=spec.values;return a[Math.floor(rnd()*a.length)];}const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);for(let i=0;i<400;i++){const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));if(!exclude.has(v))return v;}throw new Error("Could not sample param (too restrictive).");}
+function renderStem(stem,vars){return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+function evalExpr(expr,scope){const keys=["Math","Number",...Object.keys(scope)],vals=[Math,Number,...Object.values(scope)];if(typeof expr!=="string")return expr;if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr))throw new Error("Unsafe expression: "+expr);return Function(...keys,'"use strict"; return ('+expr+');')(...vals);}
+function safeEvalOrLiteral(expr,scope){if(typeof expr!=="string")return expr;const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);try{if(hasOp)return evalExpr(expr,scope);if(expr in scope)return scope[expr];return expr;}catch{return expr;}}
+function generateItem(tpl,seed="demo"){const rnd=makeRng(seed);const{stem,params={},derived={},constraints=[],answer,distractors=[]}=tpl;const MAX=250;for(let attempt=0;attempt<MAX;attempt++){const P={};for(const[k,s]of Object.entries(params))P[k]=pick(s,rnd);const D={};let okDer=true;for(const[k,e]of Object.entries(derived)){try{D[k]=evalExpr(e,{...P,...D});}catch{okDer=false;break;}}if(!okDer)continue;let ok=true;for(const c of constraints){try{if(!evalExpr(c,{...P,...D})){ok=false;break;}}catch{ok=false;break;}}if(!ok)continue;const ansVal=safeEvalOrLiteral(answer,{...P,...D});const opts=[];for(const d of distractors){const v=safeEvalOrLiteral(d,{...P,...D,ans:ansVal});if(String(v)!==String(ansVal))opts.push(v);}return{stem:renderStem(stem,{...P,...D}),params:P,derived:D,answer:ansVal,distractors:opts};}throw new Error("Constraint not satisfiable after multiple attempts");}
 
-/*** ---------- data + UI ---------- ***/
-const FILES = {
-  HOA: "data/MASTER_HOA_SAT.json",
-  PAM: "data/MASTER_PAM_SAT.json",
-  PSDA: "data/MASTER_PSDA_SAT.json",
-  GEOT: "data/MASTER_GEOT_SAT.json"
-};
-const els = {
-  mode: document.getElementById("mode"),
-  bank: document.getElementById("bank"),
-  count: document.getElementById("count"),
-  seed: document.getElementById("seed"),
-  start: document.getElementById("start"),
-  per: document.getElementById("per"),
-  randomControls: document.getElementById("randomControls"),
-  orderedControls: document.getElementById("orderedControls"),
-  diffs: document.getElementById("diffs"),
-  go: document.getElementById("go"),
-  share: document.getElementById("share"),
-  list: document.getElementById("list"),
-  status: document.getElementById("status")
-};
+/*** data + UI ***/
+const FILES={HOA:"data/MASTER_HOA_SAT.json",PAM:"data/MASTER_PAM_SAT.json",PSDA:"data/MASTER_PSDA_SAT.json",GEOT:"data/MASTER_GEOT_SAT.json"};
+const els={mode:document.getElementById("mode"),bank:document.getElementById("bank"),count:document.getElementById("count"),seed:document.getElementById("seed"),start:document.getElementById("start"),per:document.getElementById("per"),randomControls:document.getElementById("randomControls"),orderedControls:document.getElementById("orderedControls"),diffs:document.getElementById("diffs"),go:document.getElementById("go"),share:document.getElementById("share"),list:document.getElementById("list"),status:document.getElementById("status")};
 
-function getActiveDiffs() { return Array.from(els.diffs.querySelectorAll(".chip.active")).map(x => x.dataset.d); }
-function toggleChip(e) { const chip = e.target.closest(".chip"); if (chip) chip.classList.toggle("active"); }
-els.diffs.addEventListener("click", toggleChip);
-els.diffs.addEventListener("keydown", e => { if (e.key===" "||e.key==="Enter") { e.preventDefault(); toggleChip(e); } });
+function getActiveDiffs(){return Array.from(els.diffs.querySelectorAll(".chip.active")).map(x=>x.dataset.d);}
+function toggleChip(e){const chip=e.target.closest(".chip");if(chip)chip.classList.toggle("active");}
+els.diffs.addEventListener("click",toggleChip);
+els.diffs.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleChip(e);}});
 
-els.mode.addEventListener("change", () => {
-  const ordered = els.mode.value === "ordered";
-  els.randomControls.style.display = ordered ? "none" : "flex";
-  els.orderedControls.style.display = ordered ? "flex" : "none";
-});
+els.mode.addEventListener("change",()=>{const ordered=els.mode.value==="ordered";els.randomControls.style.display=ordered?"none":"flex";els.orderedControls.style.display=ordered?"flex":"none";});
 
-function seededShuffle(arr, seed) {
-  const rnd = makeRng(seed);
-  const a = arr.slice();
-  for (let i=a.length-1;i>0;i--) { const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-  return a;
-}
+function seededShuffle(arr,seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function q(key,fallback=null){return new URLSearchParams(location.search).get(key)??fallback;}
 
-function q(key, fallback=null){ return new URLSearchParams(location.search).get(key) ?? fallback; }
-function syncFromQuery() {
-  els.mode.value = q("mode","random");
-  els.bank.value = q("bank","HOA");
-  els.count.value = +q("n","10");
-  els.seed.value = q("seed","");
-  els.start.value = +q("start","0");
-  els.per.value = +q("per","10");
-  const dif = (q("d","EMH")||"").split("").filter(Boolean);
-  els.diffs.querySelectorAll(".chip").forEach(c=> c.classList.toggle("active", dif.includes(c.dataset.d)));
+function syncFromQuery(){
+  els.mode.value=q("mode","random");
+  els.bank.value=q("bank","HOA");
+  els.count.value=+q("n","10");
+  els.seed.value=q("seed","");
+  els.start.value=+q("start","0");
+  els.per.value=+q("per","10");
+  const dif=(q("d","EMH")||"").split("").filter(Boolean);
+  els.diffs.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active",dif.includes(c.dataset.d)));
   els.mode.dispatchEvent(new Event("change"));
 }
-function updateQuery(params) {
-  const u = new URL(location.href);
-  for (const [k,v] of Object.entries(params)) u.searchParams.set(k, v);
+function updateQuery(params){
+  const u=new URL(location.href);
+  for(const[k,v]of Object.entries(params))u.searchParams.set(k,v);
   history.replaceState(null,"",u.toString());
 }
 
-async function loadBanks(which) {
-  const names = which==="ALL" ? Object.keys(FILES) : [which];
-  const all = [];
-  for (const n of names) {
-    const url = FILES[n];
-    els.status.textContent = `Loading ${n}…`;
-    try {
-      const resp = await fetch(url, { cache: "no-store" });
-      if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
-      const data = await resp.json();
-      all.push(data);
-    } catch (err) {
-      throw new Error(`Failed to load ${n} from ${url}: ${err.message || err}`);
+async function loadBanks(which){
+  const names=which==="ALL"?Object.keys(FILES):[which];
+  const all=[];
+  for(const n of names){
+    const url=FILES[n];
+    els.status.textContent=`Loading ${n}…`;
+    try{
+      const resp=await fetch(url,{cache:"no-store"});
+      if(!resp.ok)throw new Error(`${resp.status} ${resp.statusText}`);
+      all.push(await resp.json());
+    }catch(err){
+      throw new Error(`Failed to load ${n} from ${url}: ${err.message||err}`);
     }
   }
-  // Avoid Array.flat for broader compatibility
-  return all.reduce((acc, cur) => acc.concat(cur), []);
+  return all.reduce((acc,cur)=>acc.concat(cur),[]);
 }
 
-function renderKaTeX(container) {
-  if (window.renderMathInElement) {
-    window.renderMathInElement(container, {
-      delimiters: [
-        {left: "$$", right: "$$", display: true},
-        {left: "\\[", right: "\\]", display: true},
-        {left: "\\(", right: "\\)", display: false},
-        {left: "$", right: "$", display: false}
+function renderKaTeX(container){
+  if(window.renderMathInElement){
+    window.renderMathInElement(container,{
+      delimiters:[
+        {left:"$$",right:"$$",display:true},
+        {left:"\\[",right:"\\]",display:true},
+        {left:"\\(",right:"\\)",display:false},
+        {left:"$",right:"$",display:false}
       ],
-      throwOnError: false
+      throwOnError:false
     });
   }
 }
 
-async function generate() {
-  els.status.textContent = "Loading…";
-  const mode = els.mode.value;
-  const bank = els.bank.value;
-  const diffs = getActiveDiffs();
-  const n = Math.max(1, parseInt(els.count.value || "10", 10));
-  const seed = els.seed.value || new Date().toISOString().slice(0,10);
-  const start = Math.max(0, parseInt(els.start.value || "0", 10));
-  const per = Math.max(1, parseInt(els.per.value || "10", 10));
+async function generate(){
+  els.status.textContent="Loading…";
+  const mode=els.mode.value;
+  const bank=els.bank.value;
+  const diffs=getActiveDiffs();
+  const n=Math.max(1,parseInt(els.count.value||"10",10));
+  const seed=els.seed.value||new Date().toISOString().slice(0,10);
+  const start=Math.max(0,parseInt(els.start.value||"0",10));
+  const per=Math.max(1,parseInt(els.per.value||"10",10));
 
-  updateQuery({mode, bank, n, seed, start, per, d: diffs.join("")});
+  updateQuery({mode,bank,n,seed,start,per,d:diffs.join("")});
 
   let items;
-  try {
-    items = (await loadBanks(bank)).filter(it => diffs.includes(it.difficulty || "M"));
-  } catch (e) {
-    els.list.innerHTML = "";
-    els.status.textContent = `⚠️ ${e.message}`;
+  try{
+    items=(await loadBanks(bank)).filter(it=>diffs.includes(it.difficulty||"M"));
+  }catch(e){
+    els.list.innerHTML="";
+    els.status.textContent=`⚠️ ${e.message}`;
     return;
   }
 
-  if (mode === "ordered") {
-    items.sort((a,b) => (a.domain||"").localeCompare(b.domain||"") ||
-                        (a.subtopic||"").localeCompare(b.subtopic||"") ||
-                        (a.id||"").localeCompare(b.id||""));
-    items = items.slice(start, start + per);
-  } else {
-    items = seededShuffle(items, seed + ":list").slice(0, Math.min(n, items.length));
+  if(mode==="ordered"){
+    items.sort((a,b)=>(a.domain||"").localeCompare(b.domain||"")||(a.subtopic||"").localeCompare(b.subtopic||"")||(a.id||"").localeCompare(b.id||""));
+    items=items.slice(start,start+per);
+  }else{
+    items=seededShuffle(items,seed+":list").slice(0,Math.min(n,items.length));
   }
 
-  els.list.innerHTML = "";
-  let ok=0, fail=0;
-  for (const it of items) {
-    const id = it.id || "(no-id)";
-    const variantSeed = (mode === "ordered") ? (id) : (seed + ":" + id);
-    let gen, err = null;
-    try { gen = generateItem(it.template, variantSeed); ok++; }
-    catch (e) { err = String(e.message || e); fail++; }
+  els.list.innerHTML="";
+  let ok=0,fail=0;
+  for(const it of items){
+    const id=it.id||"(no-id)";
+    const variantSeed=mode==="ordered"?id:(seed+":"+id);
+    let gen,err=null;
+    try{gen=generateItem(it.template,variantSeed);ok++;}catch(e){err=String(e.message||e);fail++;}
 
-    const card = document.createElement("div");
-    card.className = "card";
-    const stem = err ? `<div class="stem"><strong>⚠️ ${id}</strong><br>${err}</div>`
-                     : `<div class="stem">${gen.stem}</div>`;
-    const opts = (!err && gen.distractors && gen.distractors.length)
+    const card=document.createElement("div");
+    card.className="card";
+    const stem=err?`<div class="stem"><strong>⚠️ ${id}</strong><br>${err}</div>`:`<div class="stem">${gen.stem}</div>`;
+    const opts=(!err&&gen.distractors&&gen.distractors.length)
       ? `<div class="muted" style="margin-top:8px">Choices (shuffled locally)</div>
-         <ul>${seededShuffle([gen.answer, ...gen.distractors], variantSeed + ":opts").map(o=>`<li>${o}</li>`).join("")}</ul>`
+         <ul>${seededShuffle([gen.answer,...gen.distractors],variantSeed+":opts").map(o=>`<li>${o}</li>`).join("")}</ul>`
       : "";
-    const expl = (!err && it.template && it.template.explanation)
-      ? `<details><summary>Explanation</summary><div class="ans">${it.template.explanation}</div></details>` : "";
-    const rerollBtn = (!err) ? `<button class="reroll" data-id="${id}">Re-roll</button>` : "";
+    const expl=(!err&&it.template&&it.template.explanation)
+      ? `<details><summary>Explanation</summary><div class="ans">${it.template.explanation}</div></details>`:"";
+    const rerollBtn=(!err)?`<button class="reroll" data-id="${id}">Re-roll</button>`:"";
 
-    card.innerHTML = `
+    card.innerHTML=`
       <div class="row">
         <div class="id">${id}</div>
         <div class="spacer"></div>
         ${rerollBtn}
       </div>
       ${stem}
-      <div class="ans"><strong>Answer:</strong> ${err ? "—" : gen.answer}</div>
+      <div class="ans"><strong>Answer:</strong> ${err?"—":gen.answer}</div>
       ${opts}
       ${expl}
     `;
     els.list.appendChild(card);
   }
 
-  els.status.textContent = `${ok} rendered, ${fail} failed. ${mode==="random" ? ('Seed: ' + seed) : ''}`;
+  els.status.textContent=`${ok} rendered, ${fail} failed. ${mode==="random" ? ('Seed: '+seed) : ''}`;
   renderKaTeX(document.body);
 
-  els.list.querySelectorAll("button.reroll").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const bump = Math.floor(Math.random()*1e6);
-      els.seed.value = (els.mode.value === "ordered") ? ('reroll-' + bump) : (els.seed.value || ('reroll-' + bump));
+  els.list.querySelectorAll("button.reroll").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const bump=Math.floor(Math.random()*1e6);
+      els.seed.value=(els.mode.value==="ordered")?('reroll-'+bump):(els.seed.value||('reroll-'+bump));
       generate();
     });
   });
@@ -358,26 +252,13 @@ async function generate() {
 
 document.getElementById("go").addEventListener("click", generate);
 document.getElementById("share").addEventListener("click", () => {
-  navigator.clipboard.writeText(location.href).then(()=> {
-    els.status.textContent = "Link copied to clipboard.";
-    setTimeout(()=> els.status.textContent = "", 1500);
+  navigator.clipboard.writeText(location.href).then(()=>{
+    els.status.textContent="Link copied to clipboard.";
+    setTimeout(()=>els.status.textContent="",1500);
   });
 });
 
-function init() { syncFromQuery(); generate(); }
-function syncFromQuery() {
-  els.mode.value = q("mode","random");
-  els.bank.value = q("bank","HOA");
-  els.count.value = +q("n","10");
-  els.seed.value = q("seed","");
-  els.start.value = +q("start","0");
-  els.per.value = +q("per","10");
-  const dif = (q("d","EMH")||"").split("").filter(Boolean);
-  els.diffs.querySelectorAll(".chip").forEach(c=> c.classList.toggle("active", dif.includes(c.dataset.d)));
-  els.mode.dispatchEvent(new Event("change"));
-}
-function q(key, fallback=null){ return new URLSearchParams(location.search).get(key) ?? fallback; }
-
+function init(){ syncFromQuery(); generate(); }
 init();
 </script>
 </body>
