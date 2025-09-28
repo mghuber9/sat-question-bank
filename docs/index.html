@@ -33,6 +33,7 @@
   </style>
 
   <!-- KaTeX (optional) -->
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
@@ -209,7 +210,9 @@ async function generate(){
   let ok=0,fail=0;
   for(const it of items){
     const id=it.id||"(no-id)";
-    const variantSeed=mode==="ordered"?id:(seed+":"+id);
+    const variantSeed = (mode === "ordered")
+  ? (id + ":" + (els.seed.value || "0"))   // include the (hidden) seed in ordered mode
+  : (seed + ":" + id);
     let gen,err=null;
     try{gen=generateItem(it.template,variantSeed);ok++;}catch(e){err=String(e.message||e);fail++;}
 
