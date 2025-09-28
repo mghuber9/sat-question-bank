@@ -1,0 +1,3707 @@
+[
+  {
+    "id": "PAM-QUAD-SUM-001",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – Vieta (sum)",
+    "difficulty": "E",
+    "template": {
+      "stem": "For the equation {{a}}x^2 + {{b}}x + {{c}} = 0, what is the sum of the solutions?",
+      "params": {
+        "r1": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "a": {
+          "values": [
+            1,
+            1,
+            1,
+            2,
+            -1
+          ]
+        }
+      },
+      "derived": {
+        "b": "-a * (r1 + r2)",
+        "c": "a * r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2",
+        "a !== 0"
+      ],
+      "answer": "-(b / a)",
+      "distractors": [
+        "b / a",
+        "-(c / a)",
+        "c / b"
+      ],
+      "explanation": "By Vieta’s formulas, sum of roots = −b/a."
+    }
+  },
+  {
+    "id": "PAM-QUAD-PROD-002",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – Vieta (product)",
+    "difficulty": "E",
+    "template": {
+      "stem": "For the equation {{a}}x^2 + {{b}}x + {{c}} = 0, what is the product of the solutions?",
+      "params": {
+        "r1": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "a": {
+          "values": [
+            1,
+            1,
+            1,
+            2,
+            -1
+          ]
+        }
+      },
+      "derived": {
+        "b": "-a * (r1 + r2)",
+        "c": "a * r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2",
+        "a !== 0"
+      ],
+      "answer": "c / a",
+      "distractors": [
+        "-(b / a)",
+        "-c / a",
+        "b * c"
+      ],
+      "explanation": "By Vieta’s formulas, product of roots = c/a."
+    }
+  },
+  {
+    "id": "PAM-QUAD-VERT-003",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – vertex form",
+    "difficulty": "E",
+    "template": {
+      "stem": "Let f(x) = {{A}}(x - {{h}})^2 + {{k}}. What is the y-coordinate of the vertex of the graph of y = f(x)?",
+      "params": {
+        "A": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "h": {
+          "min": -6,
+          "max": 6
+        },
+        "k": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "constraints": [],
+      "answer": "k",
+      "distractors": [
+        "h",
+        "-k",
+        "-h"
+      ],
+      "explanation": "In vertex form y = A(x − h)^2 + k, the vertex is (h, k)."
+    }
+  },
+  {
+    "id": "PAM-QUAD-DISC-004",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – discriminant",
+    "difficulty": "M",
+    "template": {
+      "stem": "Consider the equation {{a}}x^2 + {{b}}x + {{c}} = 0. How many distinct real solutions does it have?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "( (b*b - 4*a*c) > 0 ? 2 : ((b*b - 4*a*c) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Discriminant Δ = b² − 4ac: Δ>0 → 2 solutions; Δ=0 → 1; Δ<0 → none."
+    }
+  },
+  {
+    "id": "PAM-QUAD-COMPLETE-005",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Completing the square",
+    "difficulty": "E",
+    "template": {
+      "stem": "Choose k so that x^2 + {{b}}x + k is a perfect square trinomial. What is k?",
+      "params": {
+        "b": {
+          "values": [
+            -12,
+            -10,
+            -8,
+            -6,
+            -4,
+            4,
+            6,
+            8,
+            10,
+            12
+          ]
+        }
+      },
+      "constraints": [],
+      "answer": "(b/2) * (b/2)",
+      "distractors": [
+        "b/2",
+        "b*b",
+        "(b/2) * b"
+      ],
+      "explanation": "x^2 + bx + k = (x + b/2)^2 ⇒ k = (b/2)^2."
+    }
+  },
+  {
+    "id": "PAM-NL-SYS-006",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Line–parabola intersections",
+    "difficulty": "M",
+    "template": {
+      "stem": "How many intersection points are there between y = (x − {{h}})^2 + {{k}} and y = {{m}}x + {{b}}?",
+      "params": {
+        "h": {
+          "min": -4,
+          "max": 4
+        },
+        "k": {
+          "min": -6,
+          "max": 6
+        },
+        "m": {
+          "min": -4,
+          "max": 4
+        },
+        "b": {
+          "min": -6,
+          "max": 6
+        }
+      },
+      "constraints": [
+        "m !== null"
+      ],
+      "answer": "( ((m - 2*h)*(m - 2*h) - 4*(h*h + k - b)) > 0 ? 2 : ( ((m - 2*h)*(m - 2*h) - 4*(h*h + k - b)) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Set (x−h)^2 + k = mx + b ⇒ x^2 − (2h − m)x + (h^2 + k − b) = 0. Use the discriminant."
+    }
+  },
+  {
+    "id": "PAM-RAD-SOLVE-007",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Radical equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: √({{a}}x + {{b}}) = {{c}}",
+      "params": {
+        "x0": {
+          "min": -4,
+          "max": 8
+        },
+        "a": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "min": -8,
+          "max": 16
+        }
+      },
+      "derived": {
+        "c": "Math.sqrt(a*x0 + b)"
+      },
+      "constraints": [
+        "Number.isInteger(c)",
+        "a*x0 + b >= 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "(c*c - b) / a + 1",
+        "(c*c + b) / a",
+        "(b - c*c) / a"
+      ],
+      "explanation": "Square both sides: a x + b = c² ⇒ x = (c² − b)/a. (Check domain; constructed to be valid.)"
+    }
+  },
+  {
+    "id": "PAM-RAT-SOLVE-008",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Rational equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: \\( \\dfrac{{{a}}x + {{b}}}{{{c}}x + {{d}}} = {{k}} \\)",
+      "params": {
+        "x0": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "a": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -8,
+          "max": 8
+        },
+        "c": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "d": {
+          "min": -8,
+          "max": 8
+        }
+      },
+      "derived": {
+        "k": "(a*x0 + b)/(c*x0 + d)"
+      },
+      "constraints": [
+        "c*x0 + d !== 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "-x0",
+        "(b - k*d) / (k*c - a)",
+        "(k*d - b) / (a - k*c)"
+      ],
+      "explanation": "Cross-multiply: (a x + b) = k (c x + d) ⇒ (a − k c)x = k d − b ⇒ x = (k d − b)/(a − k c)."
+    }
+  },
+  {
+    "id": "PAM-RAT-DOM-009",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Rational functions – domain",
+    "difficulty": "E",
+    "template": {
+      "stem": "For f(x) = \\( \\dfrac{{{a}}x + {{b}}}{{{c}}x + {{d}}} \\), which x-value is NOT in the domain?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "d": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "constraints": [
+        "c !== 0"
+      ],
+      "answer": "-d / c",
+      "distractors": [
+        "b / a",
+        "d / c",
+        "-b / a"
+      ],
+      "explanation": "Denominator zero at c x + d = 0 ⇒ x = −d/c."
+    }
+  },
+  {
+    "id": "PAM-EXP-SOLVE-010",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Exponentials – solving for time",
+    "difficulty": "M",
+    "template": {
+      "stem": "An initial amount {{A0}} grows by a factor of {{base}} each period. After t periods the amount is {{A}}. What is t?",
+      "params": {
+        "A0": {
+          "values": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            8,
+            10
+          ]
+        },
+        "base": {
+          "values": [
+            2,
+            3
+          ]
+        },
+        "t": {
+          "values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      "derived": {
+        "A": "A0 * (base ** t)"
+      },
+      "constraints": [],
+      "answer": "t",
+      "distractors": [
+        "t + 1",
+        "t - 1",
+        "A / A0"
+      ],
+      "explanation": "Use A = A₀·(base)^t ⇒ t = log_{base}(A/A₀). Chosen so t is an integer."
+    }
+  },
+  {
+    "id": "PAM-EXP-MODEL-011",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Exponentials – percent growth",
+    "difficulty": "E",
+    "template": {
+      "stem": "A quantity starts at {{P0}} and increases by {{r}}% each year. Which expression gives the amount after {{n}} years?",
+      "params": {
+        "P0": {
+          "min": 50,
+          "max": 300
+        },
+        "r": {
+          "values": [
+            2,
+            3,
+            5,
+            10
+          ]
+        },
+        "n": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "constraints": [],
+      "answer": "P0 * ((1 + r/100) ** n)",
+      "distractors": [
+        "P0 * (1 + r/100 * n)",
+        "P0 * (1 - r/100) ** n",
+        "P0 + r * n"
+      ],
+      "explanation": "Percent growth compounds: P(n) = P₀(1 + r/100)^n."
+    }
+  },
+  {
+    "id": "PAM-COMP-012",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Function composition",
+    "difficulty": "E",
+    "template": {
+      "stem": "If f(x) = {{a}}x + {{b}} and g(x) = {{c}}x + {{d}}, what is the coefficient of x in (f ∘ g)(x)?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "d": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "constraints": [],
+      "answer": "a * c",
+      "distractors": [
+        "a + c",
+        "b + d",
+        "a * d"
+      ],
+      "explanation": "(f∘g)(x)= a(cx + d) + b = (a c)x + (a d + b)."
+    }
+  },
+  {
+    "id": "PAM-REM-013",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Remainder theorem",
+    "difficulty": "M",
+    "template": {
+      "stem": "If p(x) = {{A}}x^2 + {{B}}x + {{C}}, what is the remainder when p(x) is divided by x − {{t}}?",
+      "params": {
+        "A": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "B": {
+          "min": -8,
+          "max": 8
+        },
+        "C": {
+          "min": -10,
+          "max": 10
+        },
+        "t": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "constraints": [],
+      "answer": "A*t*t + B*t + C",
+      "distractors": [
+        "A + B + C + t",
+        "A*t + B + C",
+        "A + B*t + C"
+      ],
+      "explanation": "Remainder upon division by (x − t) is p(t)."
+    }
+  },
+  {
+    "id": "PAM-PARAM-ROOT-014",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics with a parameter",
+    "difficulty": "M",
+    "template": {
+      "stem": "If x = {{r}} is a solution of x^2 + p x + {{q}} = 0, what is p?",
+      "params": {
+        "r": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "s": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {
+        "q": "r * s"
+      },
+      "constraints": [
+        "s !== 0"
+      ],
+      "answer": "-(r + s)",
+      "distractors": [
+        "r + s",
+        "r - s",
+        "-r * s"
+      ],
+      "explanation": "Roots r and s satisfy p = −(r + s) and q = r s."
+    }
+  },
+  {
+    "id": "PAM-POLY-ZEROS-015",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Polynomials from zeros",
+    "difficulty": "M",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For monic cubic x^3 − S₁x^2 + S₂x − S₃, the constant term is −S₃ = −(r₁r₂r₃)."
+    }
+  },
+  {
+    "id": "PAM-INV-016",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Inverse of linear rational",
+    "difficulty": "E",
+    "template": {
+      "stem": "Let f(x) = ({{a}}x + {{b}})/{{c}} with {{c}} ≠ 0. If f^{-1}({{k}}) exists, what is f^{-1}({{k}})?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": 1,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "x0": {
+          "min": -6,
+          "max": 6
+        }
+      },
+      "derived": {
+        "k": "(a*x0 + b)/c"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "(k*c - b) / (-a)",
+        "(k - b) / c",
+        "(k + b) / a"
+      ],
+      "explanation": "y = (a x + b)/c ⇒ x = (c y − b)/a. So f^{-1}(k) = (c k − b)/a = {{x0}}."
+    }
+  },
+  {
+    "id": "PAM-RATEXP-017",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Rational exponents",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: (x − {{h}})^{ {{p}} / {{q}} } = {{m}}",
+      "params": {
+        "h": {
+          "min": -5,
+          "max": 5
+        },
+        "p": {
+          "values": [
+            1,
+            2,
+            3
+          ]
+        },
+        "q": {
+          "values": [
+            2,
+            3,
+            4
+          ]
+        },
+        "t": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "m": "t"
+      },
+      "constraints": [],
+      "answer": "(m ** (q/p)) + h",
+      "distractors": [
+        "m ** (p/q) + h",
+        "h - (m ** (q/p))",
+        "(m ** (q/p)) - h"
+      ],
+      "explanation": "Raise both sides to the power q/p: x − h = m^{q/p} ⇒ x = m^{q/p} + h."
+    }
+  },
+  {
+    "id": "PAM-EXP-EQ-018",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Exponentials (solve)",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, then take log base {{base}}: x = log_{base}(B/A). Chosen so x is integer."
+    }
+  },
+  {
+    "id": "PAM-DISC-4M1-016",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Discriminant (tangency)",
+    "difficulty": "H",
+    "template": {
+      "stem": "The graphs of y = {{A}}x^2 + {{B}}x + {{C}} and y = {{m}}x + a intersect at exactly one point. Find the value of a.",
+      "params": {
+        "A": {
+          "values": [
+            1,
+            2
+          ]
+        },
+        "B": {
+          "min": -6,
+          "max": 6
+        },
+        "C": {
+          "min": -20,
+          "max": 20
+        },
+        "m": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "constraints": [
+        "A !== 0"
+      ],
+      "answer": "((B - m) * (B - m)) / (4 * A) - C",
+      "distractors": [
+        "((B + m) * (B + m)) / (4 * A) - C",
+        "C - ((B - m) * (B - m)) / (4 * A)",
+        "((B - m) * (B - m)) - 4 * A * C"
+      ],
+      "explanation": "Set {{A}}x^2 + {{B}}x + {{C}} = {{m}}x + a ⇒ {{A}}x^2 + ({{B}}−{{m}})x + ({{C}}−a)=0. For one intersection, discriminant=0 ⇒ ({{B}}−{{m}})^2 − 4{{A}}({{C}}−a)=0 ⇒ a = (({{B}}−{{m}})^2)/(4{{A}}) − {{C}}."
+    },
+    "source_map": [
+      "SAT 4 Math Mod 1 Q24"
+    ]
+  },
+  {
+    "id": "PAM-EXP-4M1-017",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Exponent rules",
+    "difficulty": "M",
+    "template": {
+      "stem": "The expression {{coef1}}·x^{{p1}} · {{coef2}}·x^{{p2}} simplifies to a·x^b with a>0, x>1. What is a + b?",
+      "params": {
+        "coef1": {
+          "values": [
+            3,
+            5,
+            6,
+            9
+          ]
+        },
+        "coef2": {
+          "values": [
+            2,
+            3,
+            5
+          ]
+        },
+        "p1": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "p2": {
+          "values": [
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "a": "coef1 * coef2",
+        "b": "p1 + p2"
+      },
+      "constraints": [],
+      "answer": "a + b",
+      "distractors": [
+        "a * b",
+        "a - b",
+        "b - a"
+      ],
+      "explanation": "Multiply coefficients and add exponents: a={{coef1}}·{{coef2}} and b={{p1}}+{{p2}}; report a+b."
+    },
+    "source_map": [
+      "SAT 4 Math Mod 1 Q21"
+    ]
+  },
+  {
+    "id": "PAM-QUAD-SOLVE-101",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – factoring",
+    "difficulty": "E",
+    "template": {
+      "stem": "Solve: x^2 + {{s}}x + {{p}} = 0",
+      "params": {
+        "r1": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "r2": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      },
+      "derived": {
+        "s": "r1 + r2",
+        "p": "r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2"
+      ],
+      "answer": "r1",
+      "distractors": [
+        "r2",
+        "-s",
+        "p"
+      ],
+      "explanation": "Roots are {{r1}} and {{r2}} since (x−r1)(x−r2)=0."
+    }
+  },
+  {
+    "id": "PAM-QUAD-VERTX-102",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Quadratics – vertex",
+    "difficulty": "E",
+    "template": {
+      "stem": "For f(x) = x^2 + {{b}}x + {{c}}, what is the x-coordinate of the vertex?",
+      "params": {
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "constraints": [],
+      "answer": "-b / 2",
+      "distractors": [
+        "b / 2",
+        "-c / 2",
+        "c / b"
+      ],
+      "explanation": "Vertex x = −b/(2a); here a=1."
+    }
+  },
+  {
+    "id": "PAM-RAD-DOM-103",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Radical functions – domain",
+    "difficulty": "E",
+    "template": {
+      "stem": "For g(x) = √({{a}}x + {{b}}), what is the least x in the domain?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "min": -12,
+          "max": 8
+        }
+      },
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "(-b) / a",
+      "distractors": [
+        "b / a",
+        "-a / b",
+        "a - b"
+      ],
+      "explanation": "Require {{a}}x + {{b}} ≥ 0 ⇒ x ≥ −b/a."
+    }
+  },
+  {
+    "id": "PAM-RAT-ASMT-104",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Rational functions – horizontal asymptote",
+    "difficulty": "M",
+    "template": {
+      "stem": "For h(x) = ({{a}}x^2 + {{b}}x + {{c}})/({{d}}x^2 + {{e}}x + {{f}}), what is the horizontal asymptote y = ?",
+      "params": {
+        "a": {
+          "min": 1,
+          "max": 5
+        },
+        "b": {
+          "min": -6,
+          "max": 6
+        },
+        "c": {
+          "min": -10,
+          "max": 10
+        },
+        "d": {
+          "min": 1,
+          "max": 5
+        },
+        "e": {
+          "min": -6,
+          "max": 6
+        },
+        "f": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "constraints": [
+        "d !== 0"
+      ],
+      "answer": "a / d",
+      "distractors": [
+        "b / e",
+        "c / f",
+        "0"
+      ],
+      "explanation": "Degrees equal ⇒ HA at ratio of leading coefficients: a/d."
+    }
+  },
+  {
+    "id": "PAM-INV-DOM-105",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Inverse – domain restriction",
+    "difficulty": "M",
+    "template": {
+      "stem": "For f(x) = ({{a}}x + {{b}})^2, restricted to x ≥ {{k}}, what is f^{-1}({{y}})?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            2,
+            3
+          ]
+        },
+        "b": {
+          "min": -4,
+          "max": 4
+        },
+        "k": {
+          "values": [
+            -2,
+            -1,
+            0,
+            1,
+            2
+          ]
+        },
+        "t": {
+          "values": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      "derived": {
+        "y": "(a*(k + t) + b) ** 2"
+      },
+      "constraints": [],
+      "answer": "(Math.sqrt(y) - b) / a",
+      "distractors": [
+        "(-Math.sqrt(y) - b) / a",
+        "(Math.sqrt(y) + b) / a",
+        "(-Math.sqrt(y) + b) / a"
+      ],
+      "explanation": "Restricting x≥k chooses the principal branch; invert y=(a x + b)^2 ⇒ x=(√y−b)/a."
+    }
+  },
+  {
+    "id": "PAM-LOG-106",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Logarithms – solve",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: log_{{b}} ({{A}}x + {{C}}) = {{k}}",
+      "params": {
+        "b": {
+          "values": [
+            2,
+            3,
+            4,
+            5,
+            10
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "C": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "derived": {
+        "k": "Math.log(A*x0 + C) / Math.log(b)"
+      },
+      "constraints": [
+        "A*x0 + C > 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "(b**k - C) / A + 1",
+        "(b**k + C) / A",
+        "(C - b**k) / A"
+      ],
+      "explanation": "b^k = A x + C ⇒ x = (b^k − C)/A = {{x0}}."
+    }
+  },
+  {
+    "id": "PAM-POLY-LEAD-107",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Polynomial long division – leading term",
+    "difficulty": "M",
+    "template": {
+      "stem": "When dividing {{A}}x^{{n}} + … by {{B}}x^{{m}} + … ({{n}}>{{m}}), what is the leading term of the quotient?",
+      "params": {
+        "A": {
+          "min": 1,
+          "max": 6
+        },
+        "B": {
+          "min": 1,
+          "max": 6
+        },
+        "n": {
+          "values": [
+            4,
+            5,
+            6
+          ]
+        },
+        "m": {
+          "values": [
+            1,
+            2,
+            3
+          ]
+        }
+      },
+      "constraints": [
+        "n > m",
+        "B !== 0"
+      ],
+      "answer": "(A / B) + 'x^' + (n - m)",
+      "distractors": [
+        "(B / A) + 'x^' + (m - n)",
+        "(A / B) + 'x^' + (n + m)",
+        "(A * B) + 'x^' + (n - m)"
+      ],
+      "explanation": "Leading term is (A/B) x^{n−m}."
+    }
+  },
+  {
+    "id": "PAM-EXP-DECAY-108",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Exponential decay – half-life style",
+    "difficulty": "E",
+    "template": {
+      "stem": "A substance starts at {{P0}} units and decays by {{r}}% each hour. How much remains after {{t}} hours?",
+      "params": {
+        "P0": {
+          "min": 100,
+          "max": 500
+        },
+        "r": {
+          "values": [
+            5,
+            10,
+            12,
+            20
+          ]
+        },
+        "t": {
+          "values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      "constraints": [],
+      "answer": "P0 * ((1 - r/100) ** t)",
+      "distractors": [
+        "P0 * (1 - r/100 * t)",
+        "P0 * (1 + r/100) ** t",
+        "P0 - r * t"
+      ],
+      "explanation": "Exponential decay: P(t)=P₀(1−r/100)^t."
+    }
+  },
+  {
+    "id": "PAM-CB-91e7ea5e",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 91e7ea5e The quadratic function h is deﬁned as shown. In the xy-plane, the graph of intersects the x-axis at the points and , where t is a constant. What is the value of t ? A. 1 B. 2 C. 4",
+    "difficulty": "H",
+    "template": {
+      "stem": "The quadratic function h is defined as shown. In the xy-plane, the graph of intersects the x-axis at the points and , where t is a constant. What is the value of t ? A. 1 B. 2 C. 4 D. 8",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.53 ID:91e7ea5e"
+    ]
+  },
+  {
+    "id": "PAM-CB-fc3d783a",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: fc3d783a In the -plane, a line with equation intersects a parabola at exactly one point. If the parabola has equation , where is a positive constant, what is the value of ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the -plane, a line with equation intersects a parabola at exactly one point. If the parabola has equation , where is a positive constant, what is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "6. It’s given that a line with equation 2𝑦=4.5 intersects a parabola with equation 𝑦= -4𝑥2 +𝑏𝑥, where",
+      "distractors": [],
+      "explanation": "The correct answer is 6. It’s given that a line with equation 2𝑦=4.5 intersects a parabola with equation 𝑦= -4𝑥2 +𝑏𝑥, where 𝑏 is a positive constant, at exactly one point in the xy-plane. It follows that the system of equations consisting of 2𝑦=4.5 and 𝑦= -4𝑥2 +𝑏𝑥 has exactly one solution. Dividing both sides of the equation of the line by 2 yields 𝑦=2.25. Substituting 2.25 for 𝑦 in the equation of the parabola yields 2.25= -4𝑥2 +𝑏𝑥. Adding 4𝑥2 and subtracting 𝑏𝑥 from both sides of this equation yields 4𝑥2 -𝑏𝑥+2.25=0. A quadratic equation in the form of 𝑎𝑥2 +𝑏𝑥+𝑐=0, where 𝑎, 𝑏, and 𝑐 are constants, has exactly one solution when the discriminant, 𝑏2 -4𝑎𝑐, is equal to zero. Substituting 4 for 𝑎 and 2.25 for 𝑐 in the expression 𝑏2 -4𝑎𝑐 and setting this expression equal to 0 yields 𝑏2 -4(4)(2.25)=0, or 𝑏2 -36=0. Adding 36 to each side of this equation yields 𝑏2 =36. Taking the square root of each side of this equation yields 𝑏= ±6. It’s given that 𝑏 is positive, so the value of 𝑏 is 6."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.54 ID:fc3d783a"
+    ]
+  },
+  {
+    "id": "PAM-CB-a9084ca4",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: a9084ca4 The given function models the number of advertisements a company sent to its clients each year, where represents the number of years since , and . If is graphed in the xy-plane, which of the following is the best interpretation of the y-intercept of the graph in this context? A. The minimum estimated number of advertisements the company sent to its clients during the years was . B. The minimum estimated number of advertisements the company sent to its clients during the years was . C. The estimated number of advertisements the company sent to its clients in was .",
+    "difficulty": "H",
+    "template": {
+      "stem": "The given function models the number of advertisements a company sent to its clients each year, where represents the number of years since , and . If is graphed in the xy-plane, which of the following is the best interpretation of the y-intercept of the graph in this context? A. The minimum estimated number of advertisements the company sent to its clients during the years was . B. The minimum estimated number of advertisements the company sent to its clients during the years was . C. The estimated number of advertisements the company sent to its clients in was . D. The estimated number of advertisements the company sent to its clients in was .",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.55 ID:a9084ca4"
+    ]
+  },
+  {
+    "id": "PAM-CB-4661e2a9",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 4661e2a9 Which ordered pair is a solution to the system of equations above?",
+    "difficulty": "H",
+    "template": {
+      "stem": "Which ordered pair is a solution to the system of equations above? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.56 ID:4661e2a9"
+    ]
+  },
+  {
+    "id": "PAM-CB-371cbf6b",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 371cbf6b The equation above is true for all x, where a and b are constants. What is the value of ab ? A. 18 B. 20 C. 24",
+    "difficulty": "H",
+    "template": {
+      "stem": "The equation above is true for all x, where a and b are constants. What is the value of ab ? A. 18 B. 20 C. 24 D. 40",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.58 ID:371cbf6b"
+    ]
+  },
+  {
+    "id": "PAM-CB-40c09d66",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 40c09d66 If for all positive values of x, what is the value of ? ID: 40c09d66 Answer Rationale The correct answer is . The value of can be found by ﬁrst rewriting the left-hand side of the given equation as .",
+    "difficulty": "H",
+    "template": {
+      "stem": "If for all positive values of x, what is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "The value of can be found by ﬁrst rewriting the left-hand side of the given equation as",
+      "distractors": [],
+      "explanation": "The correct answer is . The value of can be found by first rewriting the left-hand side of the given equation as . Using the properties of exponents, this expression can be rewritten as . This expression can be rewritten by subtracting the fractions in the exponent, which yields . Thus, is . Note that 7/6, 1.166, and 1.167 are examples of ways to enter a correct answer."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.59 ID:40c09d66"
+    ]
+  },
+  {
+    "id": "PAM-CB-f65288e8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: f65288e8 If x is a solution to the given equation, which of the following is a possible value of ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "If x is a solution to the given equation, which of the following is a possible value of ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.60 ID:f65288e8"
+    ]
+  },
+  {
+    "id": "PAM-CB-f2f3fa00",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: f2f3fa00 During a 5-second time interval, the average acceleration a, in meters per second squared, of an object with an initial velocity of 12 meters per second is deﬁned by",
+    "difficulty": "H",
+    "template": {
+      "stem": "During a 5-second time interval, the average acceleration a, in meters per second squared, of an object with an initial velocity of 12 meters per second is defined by the equation , where v is the final velocity of the object in f meters per second. If the equation is rewritten in the form v = xa + y, where x and y f are constants, what is the value of x ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "5. The given equation can be rewritten in the form , like so",
+      "distractors": [],
+      "explanation": "The correct answer is 5. The given equation can be rewritten in the form , like so: It follows that the value of x is 5 and the value of y is 12."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.61 ID:f2f3fa00"
+    ]
+  },
+  {
+    "id": "PAM-CB-9654add7",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 9654add7 The revenue , in dollars, that a company receives from sales of a product is given by the function f above, where x is the unit price, in dollars, of the product. The graph of in the xy-plane intersects the x-axis at 0 and a. What does a represent? A. The revenue, in dollars, when the unit price of the product is $0 B. The unit price, in dollars, of the product that will result in maximum revenue",
+    "difficulty": "H",
+    "template": {
+      "stem": "The revenue , in dollars, that a company receives from sales of a product is given by the function f above, where x is the unit price, in dollars, of the product. The graph of in the xy-plane intersects the x-axis at 0 and a. What does a represent? A. The revenue, in dollars, when the unit price of the product is $0 B. The unit price, in dollars, of the product that will result in maximum revenue C. The unit price, in dollars, of the product that will result in a revenue of $0 D. The maximum revenue, in dollars, that the company can make",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.62 ID:9654add7"
+    ]
+  },
+  {
+    "id": "PAM-CB-34847f8a",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 34847f8a The equation above is true for all , where r and t are positive constants. What is the value of rt ? A. B. 15 C. 20",
+    "difficulty": "H",
+    "template": {
+      "stem": "The equation above is true for all , where r and t are positive constants. What is the value of rt ? A. B. 15 C. 20 D. 60",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.63 ID:34847f8a"
+    ]
+  },
+  {
+    "id": "PAM-CB-263f9937",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 263f9937 Growth of a Culture of Bacteria Number of bacteria per Day milliliter at end of day 1 2",
+    "difficulty": "H",
+    "template": {
+      "stem": "Growth of a Culture of Bacteria Number of bacteria per Day milliliter at end of day 1 2 3 A culture of bacteria is growing at an exponential rate, as shown in the table above. At this rate, on which day would the number of bacteria per milliliter reach ? A. Day 5 B. Day 9 C. Day 11 D. Day 12",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.64 ID:263f9937"
+    ]
+  },
+  {
+    "id": "PAM-CB-137cc6fd",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 137cc6fd For what value of is the given expression equivalent to , where ? ID: 137cc6fd Answer Correct Answer: .0177, .0178, 4/225 Rationale The correct answer is 2245. An expression of the form √𝑘 𝑎, where 𝑘 is an integer greater than 1 and 𝑎≥0, is equivalent to 𝑎1𝑘.",
+    "difficulty": "H",
+    "template": {
+      "stem": "For what value of is the given expression equivalent to , where ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "2245. An expression of the form √𝑘 𝑎, where 𝑘 is an integer greater than 1 and 𝑎≥0, is equivalent to 𝑎1𝑘",
+      "distractors": [],
+      "explanation": "The correct answer is 2245. An expression of the form √𝑘 𝑎, where 𝑘 is an integer greater than 1 and 𝑎≥0, is equivalent to 𝑎1𝑘. 1 12 Therefore, the given expression, where 𝑛>1, is equivalent to 70𝑛570𝑛6 . Applying properties of exponents, this expression can be rewritten as 70𝑛1570𝑛16·2, or 70𝑛1570𝑛13, which can be rewritten as 70𝑛15+13, or 70𝑛185. It's given that the expression √5 70𝑛√6 70𝑛2 is equivalent to 70𝑛30𝑥, where 𝑛>1. It follows that 70𝑛185 is equivalent to 70𝑛30𝑥. Therefore, 8 =30𝑥. Dividing 15 both sides of this equation by 30 yields 8 =𝑥, or 4 =𝑥. Thus, the value of 𝑥 for which the given expression is equivalent to 450 225 70𝑛30𝑥, where 𝑛>1, is 2245. Note that 4/225, .0177, .0178, 0.017, and 0.018 are examples of ways to enter a correct answer."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.65 ID:137cc6fd"
+    ]
+  },
+  {
+    "id": "PAM-CB-6ce95fc8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 6ce95fc8 Which of the following is a solution to the equation above?",
+    "difficulty": "H",
+    "template": {
+      "stem": "Which of the following is a solution to the equation above? A. 2 B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.66 ID:6ce95fc8"
+    ]
+  },
+  {
+    "id": "PAM-CB-ea6d05bb",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: ea6d05bb The expression is equivalent to the expression , where , , and are constants. What is the value of ? ID: ea6d05bb Answer Correct Answer: -419 Rationale",
+    "difficulty": "H",
+    "template": {
+      "stem": "The expression is equivalent to the expression , where , , and are constants. What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "-419. It's given that the expression 3𝑥-2319𝑥+6 is equivalent to the expression 𝑎𝑥2 +𝑏𝑥+𝑐, where 𝑎, 𝑏,",
+      "distractors": [],
+      "explanation": "The correct answer is -419. It's given that the expression 3𝑥-2319𝑥+6 is equivalent to the expression 𝑎𝑥2 +𝑏𝑥+𝑐, where 𝑎, 𝑏, and 𝑐 are constants. Applying the distributive property to the given expression, 3𝑥-2319𝑥+6, yields 3𝑥19𝑥+3𝑥6-2319𝑥-236, which can be rewritten as 57𝑥2 +18𝑥-437𝑥-138. Combining like terms yields 57𝑥2 -419𝑥-138. Since this expression is equivalent to 𝑎𝑥2 +𝑏𝑥+𝑐, it follows that the value of 𝑏 is -419."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.68 ID:ea6d05bb"
+    ]
+  },
+  {
+    "id": "PAM-CB-d8789a4c",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: d8789a4c In the expression above, b and c are positive integers. If the expression is equivalent to and , which of the following could be the value of c ? A. 4 B. 6 C. 8",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the expression above, b and c are positive integers. If the expression is equivalent to and , which of the following could be the value of c ? A. 4 B. 6 C. 8 D. 10",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.69 ID:d8789a4c"
+    ]
+  },
+  {
+    "id": "PAM-CB-7bd10ef3",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 7bd10ef3 In the equation above, t is a constant. If the equation has no real solutions, which of the following could be the value of t ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the equation above, t is a constant. If the equation has no real solutions, which of the following could be the value of t ? A. B. C. 1 D. 3",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.70 ID:7bd10ef3"
+    ]
+  },
+  {
+    "id": "PAM-CB-5355c0ef",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 5355c0ef The given expression can be rewritten as , where is a constant. What is the value of ? ID: 5355c0ef Answer Correct Answer: .09, 9/100 Rationale The correct answer is .09. It's given that the expression 0.36𝑥2 +0.63𝑥+1.17 can be rewritten as 𝑎4𝑥2 +7𝑥+13. Applying",
+    "difficulty": "H",
+    "template": {
+      "stem": "The given expression can be rewritten as , where is a constant. What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "09. It's given that the expression 0.36𝑥2 +0.63𝑥+1.17 can be rewritten as 𝑎4𝑥2 +7𝑥+13. Applying",
+      "distractors": [],
+      "explanation": "The correct answer is .09. It's given that the expression 0.36𝑥2 +0.63𝑥+1.17 can be rewritten as 𝑎4𝑥2 +7𝑥+13. Applying the distributive property to the expression 𝑎4𝑥2 +7𝑥+13 yields 4𝑎𝑥2 +7𝑎𝑥+13𝑎. Therefore, 0.36𝑥2 +0.63𝑥+1.17 can be rewritten as 4𝑎𝑥2 +7𝑎𝑥+13𝑎. It follows that in the expressions 0.36𝑥2 +0.63𝑥+1.17 and 4𝑎𝑥2 +7𝑎𝑥+13𝑎, the coefficients of 𝑥2 are equivalent, the coefficients of 𝑥 are equivalent, and the constant terms are equivalent. Therefore, 0.36=4𝑎, 0.63=7𝑎, and 1.17=13𝑎. Solving any of these equations for 𝑎 yields the value of 𝑎. Dividing both sides of the equation 0.36=4𝑎 by 4 yields 0.09=𝑎. Therefore, the value of 𝑎 is 0.09. Note that .09 and 9/100 are examples of ways to enter a correct answer."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.72 ID:5355c0ef"
+    ]
+  },
+  {
+    "id": "PAM-CB-c81b6c57",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: c81b6c57 In the expression , p is a constant. This expression is equivalent to the expression . What is the value of p ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the expression , p is a constant. This expression is equivalent to the expression . What is the value of p ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.73 ID:c81b6c57"
+    ]
+  },
+  {
+    "id": "PAM-CB-66bce0c1",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 66bce0c1 What is the solution set of the equation above?",
+    "difficulty": "H",
+    "template": {
+      "stem": "What is the solution set of the equation above? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.74 ID:66bce0c1"
+    ]
+  },
+  {
+    "id": "PAM-CB-97e50fa2",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 97e50fa2 The graph of the function f, deﬁned by , is shown in the xy-plane above. If the function g (not shown) is deﬁned by , what is",
+    "difficulty": "H",
+    "template": {
+      "stem": "The graph of the function f, defined by , is shown in the xy-plane above. If the function g (not shown) is defined by , what is one possible value of a such that ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "either 2 or 8. Substituting in the deﬁnitions for f and g gives and",
+      "distractors": [],
+      "explanation": "The correct answer is either 2 or 8. Substituting in the definitions for f and g gives and , respectively. If , then . Subtracting 10 from both sides of this equation gives . Multiplying both sides by gives . Expanding gives . Combining the like terms on one side of the equation gives . One way to solve this equation is to factor by identifying two numbers with a sum of and a product of 16. These numbers are and , so the quadratic equation can be factored as . Therefore, the possible values of a are either 2 or 8. Note that 2 and 8 are examples of ways to enter a correct answer. Alternate approach: Graphically, the condition implies the graphs of the functions and intersect at . The graph is given, and the graph of may be sketched as a line with y-intercept 10 and a slope of (taking care to note the different scales on each axis). These two graphs intersect at and ."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.76 ID:97e50fa2"
+    ]
+  },
+  {
+    "id": "PAM-CB-9afe2370",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 9afe2370 The population P of a certain city y years after the last census is modeled by the equation below, where r is a constant and is the population when . If during this time the population of the city decreases by a ﬁxed percent each year, which of the following must be true? A. B.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The population P of a certain city y years after the last census is modeled by the equation below, where r is a constant and is the population when . If during this time the population of the city decreases by a fixed percent each year, which of the following must be true? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.77 ID:9afe2370"
+    ]
+  },
+  {
+    "id": "PAM-CB-3d12b1e0",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 3d12b1e0 In the given equation, is a constant. The equation has exactly one solution. What is the value of ? ID: 3d12b1e0 Answer",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the given equation, is a constant. The equation has exactly one solution. What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "-1. A quadratic equation in the form 𝑎𝑥2 +𝑏𝑥+𝑐=0, where 𝑎, 𝑏, and 𝑐 are constants, has exactly one",
+      "distractors": [],
+      "explanation": "The correct answer is -1. A quadratic equation in the form 𝑎𝑥2 +𝑏𝑥+𝑐=0, where 𝑎, 𝑏, and 𝑐 are constants, has exactly one solution when its discriminant, 𝑏2 -4𝑎𝑐, is equal to 0. In the given equation, -16𝑥2 -8𝑥+𝑐=0, 𝑎= -16 and 𝑏= -8. Substituting -16 for 𝑎 and -8 for 𝑏 in 𝑏2 -4𝑎𝑐 yields -82 -4-16𝑐, or 64+64𝑐. Since the given equation has exactly one solution, 64+64𝑐=0. Subtracting 64 from both sides of this equation yields 64𝑐= -64. Dividing both sides of this equation by 64 yields 𝑐= -1. Therefore, the value of 𝑐 is -1."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.78 ID:3d12b1e0"
+    ]
+  },
+  {
+    "id": "PAM-CB-2c88af4d",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 2c88af4d The expression , where and , is equivalent to which of the following? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The expression , where and , is equivalent to which of the following? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.79 ID:2c88af4d"
+    ]
+  },
+  {
+    "id": "PAM-CB-71014fb1",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 71014fb1 How many distinct real solutions does the given equation have? A. Exactly one",
+    "difficulty": "H",
+    "template": {
+      "stem": "How many distinct real solutions does the given equation have? A. Exactly one B. Exactly two C. Infinitely many D. Zero",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.81 ID:71014fb1"
+    ]
+  },
+  {
+    "id": "PAM-CB-22fd3e1f",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 22fd3e1f Which of the following expressions is equivalent to , for ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "Which of the following expressions is equivalent to , for ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.82 ID:22fd3e1f"
+    ]
+  },
+  {
+    "id": "PAM-CB-a0b4103e",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: a0b4103e The expression can be rewritten as , where k is a positive constant. What is the value of k ? A. 2 B. 6 C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The expression can be rewritten as , where k is a positive constant. What is the value of k ? A. 2 B. 6 C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.84 ID:a0b4103e"
+    ]
+  },
+  {
+    "id": "PAM-CB-e9349667",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: e9349667 If and are the two solutions to the system of equations above, what is the value of ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "If and are the two solutions to the system of equations above, what is the value of ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.85 ID:e9349667"
+    ]
+  },
+  {
+    "id": "PAM-CB-b03adde3",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: b03adde3 If , what is t in terms of u ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "If , what is t in terms of u ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.86 ID:b03adde3"
+    ]
+  },
+  {
+    "id": "PAM-CB-0121a235",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 0121a235 x p(x) The table above gives selected values of a polynomial function p. Based on the values in the table, which of the following must be a factor of p ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "x p(x) The table above gives selected values of a polynomial function p. Based on the values in the table, which of the following must be a factor of p ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.87 ID:0121a235"
+    ]
+  },
+  {
+    "id": "PAM-CB-70753f99",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 70753f99 The function f is deﬁned by . The graph of f in the xy-plane is a parabola. Which of the following intervals contains the x-coordinate of the vertex of the graph of f ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The function f is defined by . The graph of f in the xy-plane is a parabola. Which of the following intervals contains the x-coordinate of the vertex of the graph of f ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.89 ID:70753f99"
+    ]
+  },
+  {
+    "id": "PAM-CB-58dcc59f",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 58dcc59f A landscaper is designing a rectangular garden. The length of the garden is to be 5 feet longer than the width. If the area of the garden will be 104 square feet, what will be the length, in feet, of the garden? ID: 58dcc59f Answer Rationale The correct answer is 13. Let w represent the width of the rectangular garden, in feet. Since the length of the garden will be 5",
+    "difficulty": "H",
+    "template": {
+      "stem": "A landscaper is designing a rectangular garden. The length of the garden is to be 5 feet longer than the width. If the area of the garden will be 104 square feet, what will be the length, in feet, of the garden?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "13. Let w represent the width of the rectangular garden, in feet. Since the length of the garden will be 5",
+      "distractors": [],
+      "explanation": "The correct answer is 13. Let w represent the width of the rectangular garden, in feet. Since the length of the garden will be 5 feet longer than the width of the garden, the length of the garden will be feet. Thus the area of the garden will be . It is also given that the area of the garden will be 104 square feet. Therefore, , which is equivalent to . Factoring this equation results in . Therefore, and . Because width cannot be negative, the width of the garden must be 8 feet. This means the length of the garden must be feet."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.90 ID:58dcc59f"
+    ]
+  },
+  {
+    "id": "PAM-CB-30281058",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 30281058 In the xy-plane, the graph of intersects line p at and , where a and b are constants. What is the slope of line p ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the xy-plane, the graph of intersects line p at and , where a and b are constants. What is the slope of line p ? A. 6 B. 2 C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.91 ID:30281058"
+    ]
+  },
+  {
+    "id": "PAM-CB-84dd43f8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 84dd43f8 For the function , , and for each increase in by , the value of decreases by . What is the value of ? ID: 84dd43f8 Answer Correct Answer: 3.44, 86/25 Rationale The correct answer is 3.44. It’s given that 𝑓0=86 and that for each increase in 𝑥 by 1, the value of 𝑓𝑥 decreases by 80%.",
+    "difficulty": "H",
+    "template": {
+      "stem": "For the function , , and for each increase in by , the value of decreases by . What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "3.44. It’s given that 𝑓0=86 and that for each increase in 𝑥 by 1, the value of 𝑓𝑥 decreases by 80%",
+      "distractors": [],
+      "explanation": "The correct answer is 3.44. It’s given that 𝑓0=86 and that for each increase in 𝑥 by 1, the value of 𝑓𝑥 decreases by 80%. Because the output of the function decreases by a constant percentage for each 1-unit increase in the value of 𝑥, this relationship can be represented by an exponential function of the form 𝑓𝑥=𝑎𝑏𝑥, where 𝑎 represents the initial value of the function and 𝑏 represents the rate of decay, expressed as a decimal. Because 𝑓0=86, the value of 𝑎 must be 86. Because the value of 𝑓𝑥 decreases by 80% for each 1- unit increase in 𝑥, the value of 𝑏 must be (1−0.80), or 0.2. Therefore, the function 𝑓 can be defined by 𝑓𝑥=860.2𝑥. Substituting 2 for 𝑥 in this function yields 𝑓2=860.22, which is equivalent to 𝑓2=860.04, or 𝑓2=3.44. Either 3.44 or 86/25 may be entered as the correct answer. Alternate approach: It’s given that 𝑓0=86 and that for each increase in 𝑥 by 1, the value of 𝑓𝑥 decreases by 80%. Therefore, when 𝑥=1, the value of 𝑓𝑥 is (100−80)%, or 20%, of 86, which can be expressed as 0.2086. Since 0.2086=17.2, the value of 𝑓1 is 17.2. Similarly, when 𝑥=2, the value of 𝑓𝑥 is 20% of 17.2, which can be expressed as 0.2017.2. Since 0.2017.2=3.44, the value of 𝑓2 is 3.44. Either 3.44 or 86/25 may be entered as the correct answer."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.92 ID:84dd43f8"
+    ]
+  },
+  {
+    "id": "PAM-CB-59d1f4b5",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 59d1f4b5 The equation above models the number of members, M, of a gym t years after the gym opens. Of the following, which equation models the number of members of the gym q quarter years after the gym opens? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The equation above models the number of members, M, of a gym t years after the gym opens. Of the following, which equation models the number of members of the gym q quarter years after the gym opens? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.93 ID:59d1f4b5"
+    ]
+  },
+  {
+    "id": "PAM-CB-5910bfff",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 5910bfff The formula above can be used to approximate the dew point D, in degrees Fahrenheit, given the temperature T, in degrees Fahrenheit, and the relative",
+    "difficulty": "H",
+    "template": {
+      "stem": "The formula above can be used to approximate the dew point D, in degrees Fahrenheit, given the temperature T, in degrees Fahrenheit, and the relative humidity of H percent, where . Which of the following expresses the relative humidity in terms of the temperature and the dew point? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.94 ID:5910bfff"
+    ]
+  },
+  {
+    "id": "PAM-CB-ad038c19",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: ad038c19 Which of the following is equivalent to ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "Which of the following is equivalent to ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.95 ID:ad038c19"
+    ]
+  },
+  {
+    "id": "PAM-CB-635f54ee",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 635f54ee The surface area of a cube is , where a is a positive constant. Which of the following gives the perimeter of one face of the cube? A. B. C. D.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The surface area of a cube is , where a is a positive constant. Which of the following gives the perimeter of one face of the cube? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.96 ID:635f54ee"
+    ]
+  },
+  {
+    "id": "PAM-CB-1697ffcf",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 1697ffcf In the xy-plane, the graph of intersects the graph of at the points and . What is the value of a ?",
+    "difficulty": "H",
+    "template": {
+      "stem": "In the xy-plane, the graph of intersects the graph of at the points and . What is the value of a ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "5. The intersection points of the graphs of and can be found by solving the",
+      "distractors": [],
+      "explanation": "The correct answer is 5. The intersection points of the graphs of and can be found by solving the system consisting of these two equations. To solve the system, substitute x for y in the first equation. This gives . Subtracting x from both sides of the equation gives . Factoring out of each term on the left-hand side of the equation gives . Therefore, the possible values for x are 0 and 5. Since , the two intersection points are and . Therefore, ."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.97 ID:1697ffcf"
+    ]
+  },
+  {
+    "id": "PAM-CB-de39858a",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: de39858a The function is deﬁned by , where and are positive constants. The graph of in the -plane passes through the points ( , ) and ( , ). What is the value of ? A. B. C. D.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The function is defined by , where and are positive constants. The graph of in the -plane passes through the points ( , ) and ( , ). What is the value of ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.98 ID:de39858a"
+    ]
+  },
+  {
+    "id": "PAM-CB-1178f2df",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 1178f2df The table shows three values of and their corresponding values of , where and is a quadratic function. What is the y-coordinate of the y-intercept of the graph of in the xy-plane? ID: 1178f2df Answer Correct Answer: -2112 Rationale The correct answer is -2,112. It's given that 𝑓 is a quadratic function. It follows that 𝑓 can be deﬁned by an equation of the",
+    "difficulty": "H",
+    "template": {
+      "stem": "The table shows three values of and their corresponding values of , where and is a quadratic function. What is the y-coordinate of the y-intercept of the graph of in the xy-plane?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "-2,112. It's given that 𝑓 is a quadratic function. It follows that 𝑓 can be deﬁned by an equation of the",
+      "distractors": [],
+      "explanation": "The correct answer is -2,112. It's given that 𝑓 is a quadratic function. It follows that 𝑓 can be defined by an equation of the form 𝑓𝑥=𝑎𝑥-ℎ2 +𝑘, where 𝑎, ℎ, and 𝑘 are constants. It's also given that the table shows three values of 𝑥 and their corresponding values of 𝑦, where 𝑦=𝑓𝑥+4. Substituting 𝑎𝑥-ℎ2 +𝑘 for 𝑓𝑥 in this equation yields 𝑦=𝑎𝑥-ℎ2 +𝑘+4. This equation represents a quadratic relationship between 𝑥 and 𝑦, where 𝑘+4 is either the maximum or the minimum value of 𝑦, which occurs when 𝑥=ℎ. For quadratic relationships between 𝑥 and 𝑦, the maximum or minimum value of 𝑦 occurs at the value of 𝑥 halfway between any two values of 𝑥 that have the same corresponding value of 𝑦. The table shows that x-values of 21 and 25 correspond to the same y-value, -8. Since 23 is halfway between 21 and 25, the maximum or minimum value of 𝑦 occurs at an x-value of 23. The table shows that when 𝑥=23, 𝑦=8. It follows that ℎ=23 and 𝑘+4=8. Subtracting 4 from both sides of the equation 𝑘+4=8 yields 𝑘=4. Substituting 23 for ℎ and 4 for 𝑘 in the equation 𝑦=𝑎𝑥-ℎ2 +𝑘+4 yields 𝑦=𝑎𝑥-232 +4+4, or 𝑦=𝑎𝑥-232 +8. The value of 𝑎 can be found by substituting any x-value and its corresponding y-value for 𝑥 and 𝑦, respectively, in this equation. Substituting 25 for 𝑥 and -8 for 𝑦 in this equation yields -8=𝑎25-232 +8, or -8=𝑎22 +8. Subtracting 8 from both sides of this equation yields -16=𝑎22, or -16=4𝑎. Dividing both sides of this equation by 4 yields -4=𝑎. Substituting -4 for 𝑎, 23 for ℎ, and 4 for 𝑘 in the equation 𝑓𝑥=𝑎𝑥-ℎ2 +𝑘 yields 𝑓𝑥= -4𝑥-232 +4. The y- intercept of the graph of 𝑦=𝑓𝑥 in the xy-plane is the point on the graph where 𝑥=0. Substituting 0 for 𝑥 in the equation 𝑓𝑥= -4𝑥-232 +4 yields 𝑓0= -40-232 +4, or 𝑓0= -4-232 +4. This is equivalent to 𝑓0= -2,112, so the y-intercept of the graph of 𝑦=𝑓𝑥 in the xy-plane is 0, -2,112. Thus, the y-coordinate of the y-intercept of the graph of 𝑦=𝑓𝑥 in the xy-plane is -2,112."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.99 ID:1178f2df"
+    ]
+  },
+  {
+    "id": "PAM-CB-84e8cc72",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 84e8cc72 A quadratic function models the height, in feet, of an object above the ground in terms of the time, in seconds, after the object is launched off an elevated surface. The model indicates the object has an initial height of feet above the ground and reaches its maximum height of feet above the ground seconds after being launched. Based on the model, what is the height, in feet, of the object above the ground seconds after being launched? A. B.",
+    "difficulty": "H",
+    "template": {
+      "stem": "A quadratic function models the height, in feet, of an object above the ground in terms of the time, in seconds, after the object is launched off an elevated surface. The model indicates the object has an initial height of feet above the ground and reaches its maximum height of feet above the ground seconds after being launched. Based on the model, what is the height, in feet, of the object above the ground seconds after being launched? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.100 ID:84e8cc72"
+    ]
+  },
+  {
+    "id": "PAM-CB-12e7faf8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 12e7faf8 The equation is true for all , where a and d are integers. What is the value of ? A. B. C. 0",
+    "difficulty": "H",
+    "template": {
+      "stem": "The equation is true for all , where a and d are integers. What is the value of ? A. B. C. 0 D. 1",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.101 ID:12e7faf8"
+    ]
+  },
+  {
+    "id": "PAM-CB-89fc23af",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 89fc23af Which of the following expressions is equivalent to ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "Which of the following expressions is equivalent to ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.102 ID:89fc23af"
+    ]
+  },
+  {
+    "id": "PAM-CB-911c415b",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: 911c415b The expression above can be written in the form , where a and b are constants. What is the value of ? ID: 911c415b Answer Rationale The correct answer is 6632. Applying the distributive property to the expression yields .",
+    "difficulty": "H",
+    "template": {
+      "stem": "The expression above can be written in the form , where a and b are constants. What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "6632. Applying the distributive property to the expression yields",
+      "distractors": [],
+      "explanation": "The correct answer is 6632. Applying the distributive property to the expression yields . Then adding together and and collecting like terms results in . This is written in the form , where and . Therefore ."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.103 ID:911c415b"
+    ]
+  },
+  {
+    "id": "PAM-CB-f89e1d6f",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: f89e1d6f If , which of the following is equivalent to the expression ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "If , which of the following is equivalent to the expression ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.104 ID:f89e1d6f"
+    ]
+  },
+  {
+    "id": "PAM-CB-4b642eef",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 4b642eef The total distance d, in meters, traveled by an object moving in a straight line can be modeled by a quadratic function that is deﬁned in terms of t, where t is the time in seconds. At a time of 10.0 seconds, the total distance traveled by the object is 50.0 meters, and at a time of 20.0 seconds, the total distance traveled by the object is 200.0 meters. If the object was at a distance of 0 meters when , then what is the total distance traveled, in meters, by the object after 30.0 seconds?",
+    "difficulty": "H",
+    "template": {
+      "stem": "The total distance d, in meters, traveled by an object moving in a straight line can be modeled by a quadratic function that is defined in terms of t, where t is the time in seconds. At a time of 10.0 seconds, the total distance traveled by the object is 50.0 meters, and at a time of 20.0 seconds, the total distance traveled by the object is 200.0 meters. If the object was at a distance of 0 meters when , then what is the total distance traveled, in meters, by the object after 30.0 seconds?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "450. The quadratic equation that models this situation can be written in the form ,",
+      "distractors": [],
+      "explanation": "The correct answer is 450. The quadratic equation that models this situation can be written in the form , where a, b, and c are constants. It’s given that the distance, d, the object traveled was 0 meters when seconds. These values can be substituted into the equation to solve for a, b, and c: . Therefore, , and it follows that . Since it’s also given that d is 50 when t is 10 and d is 200 when t is 20, these values for d and t can be substituted to create a system of two linear equations: and , or and . Subtracting the first equation from the second equation yields , or . Substituting for a in the first equation and solving for b yields . Therefore, the equation that represents this situation is . Evaluating this function when seconds yields , or meters."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.105 ID:4b642eef"
+    ]
+  },
+  {
+    "id": "PAM-CB-2c5c22d0",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 2c5c22d0 How many solutions are there to the system of equations above?",
+    "difficulty": "H",
+    "template": {
+      "stem": "How many solutions are there to the system of equations above? A. There are exactly 4 solutions. B. There are exactly 2 solutions. C. There is exactly 1 solution. D. There are no solutions.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.106 ID:2c5c22d0"
+    ]
+  },
+  {
+    "id": "PAM-CB-fc3dfa26",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: fc3dfa26 What value of x satisﬁes the equation above?",
+    "difficulty": "H",
+    "template": {
+      "stem": "What value of x satisfies the equation above? A. B. C. D. 3",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.107 ID:fc3dfa26"
+    ]
+  },
+  {
+    "id": "PAM-CB-9f2ecade",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 9f2ecade The function h is deﬁned above, where a, b, and c are integer constants. If the zeros of the function are 6, and 7, what is the value of c ? ID: 9f2ecade Answer Rationale The correct answer is 210. Since , 6, and 7 are zeros of the function, the function can be rewritten as . Expanding the function yields . Thus, , , and",
+    "difficulty": "H",
+    "template": {
+      "stem": "The function h is defined above, where a, b, and c are integer constants. If the zeros of the function are 6, and 7, what is the value of c ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "210. Since , 6, and 7 are zeros of the function, the function can be rewritten as",
+      "distractors": [],
+      "explanation": "The correct answer is 210. Since , 6, and 7 are zeros of the function, the function can be rewritten as . Expanding the function yields . Thus, , , and . Therefore, the value of c is 210."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.109 ID:9f2ecade"
+    ]
+  },
+  {
+    "id": "PAM-CB-e117d3b8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent expressions ID: e117d3b8 If a and c are positive numbers, which of the following is equivalent to ? A. B. C.",
+    "difficulty": "H",
+    "template": {
+      "stem": "If a and c are positive numbers, which of the following is equivalent to ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.110 ID:e117d3b8"
+    ]
+  },
+  {
+    "id": "PAM-CB-6f5540a5",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 6f5540a5 Kao measured the temperature of a cup of hot chocolate placed in a room with a constant temperature of 70 degrees Fahrenheit (°F). The temperature of the hot chocolate was 185°F at 6:00 p.m. when it started cooling. The temperature of the hot chocolate was 156°F at 6:05 p.m. and 135°F at 6:10 p.m. The hot chocolate’s temperature continued to decrease. Of the following functions, which best models the temperature , in degrees Fahrenheit, of Kao’s hot chocolate m minutes",
+    "difficulty": "H",
+    "template": {
+      "stem": "Kao measured the temperature of a cup of hot chocolate placed in a room with a constant temperature of 70 degrees Fahrenheit (°F). The temperature of the hot chocolate was 185°F at 6:00 p.m. when it started cooling. The temperature of the hot chocolate was 156°F at 6:05 p.m. and 135°F at 6:10 p.m. The hot chocolate’s temperature continued to decrease. Of the following functions, which best models the temperature , in degrees Fahrenheit, of Kao’s hot chocolate m minutes after it started cooling? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.111 ID:6f5540a5"
+    ]
+  },
+  {
+    "id": "PAM-CB-b73ee6cf",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: b73ee6cf The population of a town is currently 50,000, and the population is estimated to increase each year by 3% from the previous year. Which of the following equations can be used to estimate the number of years, t, it will take for the population of the town to reach 60,000 ? A. B.",
+    "difficulty": "H",
+    "template": {
+      "stem": "The population of a town is currently 50,000, and the population is estimated to increase each year by 3% from the previous year. Which of the following equations can be used to estimate the number of years, t, it will take for the population of the town to reach 60,000 ? A. B. C. D.",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.113 ID:b73ee6cf"
+    ]
+  },
+  {
+    "id": "PAM-CB-7eed640d",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 7eed640d The quadratic function above models the height above the ground h, in feet, of a projectile x seconds after it had been launched vertically. If is graphed in the xy-plane, which of the following represents the real-life meaning of the positive x-intercept of the graph? A. The initial height of the projectile B. The maximum height of the projectile",
+    "difficulty": "H",
+    "template": {
+      "stem": "The quadratic function above models the height above the ground h, in feet, of a projectile x seconds after it had been launched vertically. If is graphed in the xy-plane, which of the following represents the real-life meaning of the positive x-intercept of the graph? A. The initial height of the projectile B. The maximum height of the projectile C. The time at which the projectile reaches its maximum height D. The time at which the projectile hits the ground",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.114 ID:7eed640d"
+    ]
+  },
+  {
+    "id": "PAM-CB-43926bd9",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 43926bd9 For the exponential function f, the table above shows several values of x and their corresponding values of , where a is a constant greater than 1. If k is a constant and , what is the value of k ? ID: 43926bd9 Answer Rationale The correct answer is 8. The values of for the exponential function f shown in the table increase by a factor of for each increase of 1 in x. This relationship can be represented by the equation , where b is a constant. It’s given",
+    "difficulty": "H",
+    "template": {
+      "stem": "For the exponential function f, the table above shows several values of x and their corresponding values of , where a is a constant greater than 1. If k is a constant and , what is the value of k ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "8. The values of for the exponential function f shown in the table increase by a factor of for",
+      "distractors": [],
+      "explanation": "The correct answer is 8. The values of for the exponential function f shown in the table increase by a factor of for each increase of 1 in x. This relationship can be represented by the equation , where b is a constant. It’s given that when , . Substituting 2 for x and for into yields . Since , it follows that . Thus, an equation that defines the function f is . It follows that the value of k such that can be found by solving the equation , which yields ."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.115 ID:43926bd9"
+    ]
+  },
+  {
+    "id": "PAM-CB-a7711fe8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: a7711fe8 What is the minimum value of the function f deﬁned by ? A. B. C. 2 D. 4",
+    "difficulty": "H",
+    "template": {
+      "stem": "What is the minimum value of the function f defined by ? A. B. C. 2 D. 4",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.116 ID:a7711fe8"
+    ]
+  },
+  {
+    "id": "PAM-CB-1a722d7d",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions ID: 1a722d7d Let the function p be deﬁned as , where c is a constant. If , what is the value of ? A. 10.00 B. 10.25 C. 10.75 D. 11.00",
+    "difficulty": "H",
+    "template": {
+      "stem": "Let the function p be defined as , where c is a constant. If , what is the value of ? A. 10.00 B. 10.25 C. 10.75 D. 11.00",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "",
+      "distractors": [],
+      "explanation": ""
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.117 ID:1a722d7d"
+    ]
+  },
+  {
+    "id": "PAM-CB-58b109d4",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations in one variable and systems of equations in two variables ID: 58b109d4 The solution to the given system of equations is . What is the value of ? ID: 58b109d4 Answer",
+    "difficulty": "H",
+    "template": {
+      "stem": "The solution to the given system of equations is . What is the value of ?",
+      "params": {},
+      "derived": {},
+      "constraints": [],
+      "answer": "-10. Adding 𝑦 to both sides of the second equation in the given system yields 20𝑥+100=𝑦",
+      "distractors": [],
+      "explanation": "The correct answer is -10. Adding 𝑦 to both sides of the second equation in the given system yields 20𝑥+100=𝑦. Substituting 20𝑥+100 for 𝑦 in the first equation in the given system yields 𝑥2 +20𝑥+100+7=7. Subtracting 7 from both sides of this equation yields 𝑥2 +20𝑥+100=0. Factoring the left-hand side of this equation yields 𝑥+10𝑥+10=0, or 𝑥+102 =0. Taking the square root of both sides of this equation yields 𝑥+10=0. Subtracting 10 from both sides of this equation yields 𝑥= -10. Therefore, the value of 𝑥 is -10."
+    },
+    "source_map": [
+      "CB difficult with answers.PDF p.118 ID:58b109d4"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-beca03de",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:beca03de",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-4e18fc5d",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "How many distinct real solutions does {{a}}x^2 + {{b}}x + {{c}} = 0 have?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "( (b*b - 4*a*c) > 0 ? 2 : ((b*b - 4*a*c) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Discriminant Δ=b²−4ac: Δ>0→2; Δ=0→1; Δ<0→0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:4e18fc5d",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-f5c3e3b8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "E",
+    "template": {
+      "stem": "For f(x) = x^2 + {{b}}x + {{c}}, what is the x-coordinate of the vertex?",
+      "params": {
+        "b": {
+          "min": -12,
+          "max": 12
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-b / 2",
+      "distractors": [
+        "b / 2",
+        "-c / 2",
+        "c / b"
+      ],
+      "explanation": "Vertex x = −b/(2a), here a=1."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:f5c3e3b8",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-a5663025",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve: x^2 + {{s}}x + {{p}} = 0",
+      "params": {
+        "r1": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "r2": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      },
+      "derived": {
+        "s": "r1 + r2",
+        "p": "r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2"
+      ],
+      "answer": "r1",
+      "distractors": [
+        "r2",
+        "-s",
+        "p"
+      ],
+      "explanation": "The roots are {{r1}} and {{r2}} since (x-{{r1}})(x-{{r2}})=0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:a5663025",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-3c95093c",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "E",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:3c95093c",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-d0a7871e",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "For f(x) = x^2 + {{b}}x + {{c}}, what is the x-coordinate of the vertex?",
+      "params": {
+        "b": {
+          "min": -12,
+          "max": 12
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-b / 2",
+      "distractors": [
+        "b / 2",
+        "-c / 2",
+        "c / b"
+      ],
+      "explanation": "Vertex x = −b/(2a), here a=1."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:d0a7871e",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-72ebc024",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "E",
+    "template": {
+      "stem": "Solve for x: √({{a}}x + {{b}}) = {{c}}",
+      "params": {
+        "x0": {
+          "min": -4,
+          "max": 8
+        },
+        "a": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "min": -8,
+          "max": 16
+        }
+      },
+      "derived": {
+        "c": "Math.sqrt(a*x0 + b)"
+      },
+      "constraints": [
+        "Number.isInteger(c)",
+        "a*x0 + b >= 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "(c*c - b)/a + 1",
+        "(c*c + b)/a",
+        "(b - c*c)/a"
+      ],
+      "explanation": "Square: a x + b = c² ⇒ x = (c² − b)/a. Constructed to be valid."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:72ebc024",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-dd4ab4c4",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve: x^2 + {{s}}x + {{p}} = 0",
+      "params": {
+        "r1": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "r2": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      },
+      "derived": {
+        "s": "r1 + r2",
+        "p": "r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2"
+      ],
+      "answer": "r1",
+      "distractors": [
+        "r2",
+        "-s",
+        "p"
+      ],
+      "explanation": "The roots are {{r1}} and {{r2}} since (x-{{r1}})(x-{{r2}})=0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:dd4ab4c4",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-b8caaf84",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:b8caaf84",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-7f81d0c3",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve: x^2 + {{s}}x + {{p}} = 0",
+      "params": {
+        "r1": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "r2": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      },
+      "derived": {
+        "s": "r1 + r2",
+        "p": "r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2"
+      ],
+      "answer": "r1",
+      "distractors": [
+        "r2",
+        "-s",
+        "p"
+      ],
+      "explanation": "The roots are {{r1}} and {{r2}} since (x-{{r1}})(x-{{r2}})=0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:7f81d0c3",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-332cd67b",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "E",
+    "template": {
+      "stem": "Let f(x) = ({{a}}x + {{b}})/{{c}} with {{c}} ≠ 0. If f^{-1}({{k}}) exists, what is f^{-1}({{k}})?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": 1,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "x0": {
+          "min": -6,
+          "max": 6
+        }
+      },
+      "derived": {
+        "k": "(a*x0 + b)/c"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "(k*c - b)/(-a)",
+        "(k - b)/c",
+        "(k + b)/a"
+      ],
+      "explanation": "Solve y=(a x + b)/c ⇒ x=(c y − b)/a ⇒ f^{-1}(k)=(c k − b)/a."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:332cd67b",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-7f2524bf",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "How many distinct real solutions does {{a}}x^2 + {{b}}x + {{c}} = 0 have?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "( (b*b - 4*a*c) > 0 ? 2 : ((b*b - 4*a*c) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Discriminant Δ=b²−4ac: Δ>0→2; Δ=0→1; Δ<0→0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:7f2524bf",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-e312081b",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "E",
+    "template": {
+      "stem": "How many distinct real solutions does {{a}}x^2 + {{b}}x + {{c}} = 0 have?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "( (b*b - 4*a*c) > 0 ? 2 : ((b*b - 4*a*c) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Discriminant Δ=b²−4ac: Δ>0→2; Δ=0→1; Δ<0→0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:e312081b",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-52931bfa",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:52931bfa",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-1e003284",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "E",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:1e003284",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-e9aed539",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:e9aed539",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-4fbffc0a",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "Solve: x^2 + {{s}}x + {{p}} = 0",
+      "params": {
+        "r1": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "r2": {
+          "values": [
+            -6,
+            -5,
+            -4,
+            -3,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      },
+      "derived": {
+        "s": "r1 + r2",
+        "p": "r1 * r2"
+      },
+      "constraints": [
+        "r1 !== r2"
+      ],
+      "answer": "r1",
+      "distractors": [
+        "r2",
+        "-s",
+        "p"
+      ],
+      "explanation": "The roots are {{r1}} and {{r2}} since (x-{{r1}})(x-{{r2}})=0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:4fbffc0a",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-39714777",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "If f(x) = {{a}}x + {{b}} and g(x) = {{c}}x + {{d}}, what is the coefficient of x in (f ∘ g)(x)?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "d": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "a * c",
+      "distractors": [
+        "a + c",
+        "b + d",
+        "a * d"
+      ],
+      "explanation": "(f∘g)(x)= a(cx + d) + b ⇒ (ac)x + (ad + b)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:39714777",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-075b29b0",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "E",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:075b29b0",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-cb29c54c",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:cb29c54c",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-6abec9a8",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "If f(x) = {{a}}x + {{b}} and g(x) = {{c}}x + {{d}}, what is the coefficient of x in (f ∘ g)(x)?",
+      "params": {
+        "a": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -6,
+          "max": 6,
+          "exclude": [
+            0
+          ]
+        },
+        "d": {
+          "min": -10,
+          "max": 10
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "a * c",
+      "distractors": [
+        "a + c",
+        "b + d",
+        "a * d"
+      ],
+      "explanation": "(f∘g)(x)= a(cx + d) + b ⇒ (ac)x + (ad + b)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:6abec9a8",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-ad2ec615",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: √({{a}}x + {{b}}) = {{c}}",
+      "params": {
+        "x0": {
+          "min": -4,
+          "max": 8
+        },
+        "a": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "min": -8,
+          "max": 16
+        }
+      },
+      "derived": {
+        "c": "Math.sqrt(a*x0 + b)"
+      },
+      "constraints": [
+        "Number.isInteger(c)",
+        "a*x0 + b >= 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "(c*c - b)/a + 1",
+        "(c*c + b)/a",
+        "(b - c*c)/a"
+      ],
+      "explanation": "Square: a x + b = c² ⇒ x = (c² − b)/a. Constructed to be valid."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:ad2ec615",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-42c71eb5",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "A monic cubic has zeros {{r1}}, {{r2}}, and {{r3}}. What is the constant term?",
+      "params": {
+        "r1": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r2": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "r3": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-(r1 * r2 * r3)",
+      "distractors": [
+        "r1 * r2 * r3",
+        "r1 + r2 + r3",
+        "-(r1 + r2 + r3)"
+      ],
+      "explanation": "For x^3 − S₁x^2 + S₂x − S₃, constant term is −S₃ = −r₁r₂r₃."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:42c71eb5",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-52b1700c",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:52b1700c",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-b4acba95",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "M",
+    "template": {
+      "stem": "For f(x) = x^2 + {{b}}x + {{c}}, what is the x-coordinate of the vertex?",
+      "params": {
+        "b": {
+          "min": -12,
+          "max": 12
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-b / 2",
+      "distractors": [
+        "b / 2",
+        "-c / 2",
+        "c / b"
+      ],
+      "explanation": "Vertex x = −b/(2a), here a=1."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:b4acba95",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-ff8c5844",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:ff8c5844",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-a05bd3a4",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Equivalent",
+    "difficulty": "M",
+    "template": {
+      "stem": "If p(x) = {{A}}x^2 + {{B}}x + {{C}}, what is the remainder when p(x) is divided by x − {{t}}?",
+      "params": {
+        "A": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "B": {
+          "min": -8,
+          "max": 8
+        },
+        "C": {
+          "min": -10,
+          "max": 10
+        },
+        "t": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "A*t*t + B*t + C",
+      "distractors": [
+        "A + B + C + t",
+        "A*t + B + C",
+        "A + B*t + C"
+      ],
+      "explanation": "Remainder upon division by (x − t) is p(t)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:a05bd3a4",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-f423771c",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: {{A}}·{{base}}^x = {{B}}",
+      "params": {
+        "base": {
+          "values": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "x0": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "A": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      "derived": {
+        "B": "A * (base ** x0)"
+      },
+      "constraints": [],
+      "answer": "x0",
+      "distractors": [
+        "x0 + 1",
+        "x0 - 1",
+        "B / (A * base)"
+      ],
+      "explanation": "Divide by A, take log base {{base}}: x = log_{base}(B/A) (chosen integer)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:f423771c",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-1d3c5c95",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "For f(x) = x^2 + {{b}}x + {{c}}, what is the x-coordinate of the vertex?",
+      "params": {
+        "b": {
+          "min": -12,
+          "max": 12
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "-b / 2",
+      "distractors": [
+        "b / 2",
+        "-c / 2",
+        "c / b"
+      ],
+      "explanation": "Vertex x = −b/(2a), here a=1."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:1d3c5c95",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-ae05d37b",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "M",
+    "template": {
+      "stem": "Solve for x: √({{a}}x + {{b}}) = {{c}}",
+      "params": {
+        "x0": {
+          "min": -4,
+          "max": 8
+        },
+        "a": {
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "min": -8,
+          "max": 16
+        }
+      },
+      "derived": {
+        "c": "Math.sqrt(a*x0 + b)"
+      },
+      "constraints": [
+        "Number.isInteger(c)",
+        "a*x0 + b >= 0"
+      ],
+      "answer": "x0",
+      "distractors": [
+        "(c*c - b)/a + 1",
+        "(c*c + b)/a",
+        "(b - c*c)/a"
+      ],
+      "explanation": "Square: a x + b = c² ⇒ x = (c² − b)/a. Constructed to be valid."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:ae05d37b",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-1ee962ec",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "How many distinct real solutions does {{a}}x^2 + {{b}}x + {{c}} = 0 have?",
+      "params": {
+        "a": {
+          "values": [
+            1,
+            1,
+            2,
+            -1
+          ]
+        },
+        "b": {
+          "min": -10,
+          "max": 10
+        },
+        "c": {
+          "min": -20,
+          "max": 20
+        }
+      },
+      "derived": {},
+      "constraints": [
+        "a !== 0"
+      ],
+      "answer": "( (b*b - 4*a*c) > 0 ? 2 : ((b*b - 4*a*c) === 0 ? 1 : 0) )",
+      "distractors": [
+        "2",
+        "1",
+        "0"
+      ],
+      "explanation": "Discriminant Δ=b²−4ac: Δ>0→2; Δ=0→1; Δ<0→0."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:1ee962ec",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-c6a26e14",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear equations",
+    "difficulty": "E",
+    "template": {
+      "stem": "If p(x) = {{A}}x^2 + {{B}}x + {{C}}, what is the remainder when p(x) is divided by x − {{t}}?",
+      "params": {
+        "A": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "B": {
+          "min": -8,
+          "max": 8
+        },
+        "C": {
+          "min": -10,
+          "max": 10
+        },
+        "t": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "A*t*t + B*t + C",
+      "distractors": [
+        "A + B + C + t",
+        "A*t + B + C",
+        "A + B*t + C"
+      ],
+      "explanation": "Remainder upon division by (x − t) is p(t)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:c6a26e14",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  },
+  {
+    "id": "PAM-CB-EM-07bcecac",
+    "domain": "Passport to Advanced Math",
+    "subtopic": "Nonlinear functions",
+    "difficulty": "E",
+    "template": {
+      "stem": "If p(x) = {{A}}x^2 + {{B}}x + {{C}}, what is the remainder when p(x) is divided by x − {{t}}?",
+      "params": {
+        "A": {
+          "min": -5,
+          "max": 5,
+          "exclude": [
+            0
+          ]
+        },
+        "B": {
+          "min": -8,
+          "max": 8
+        },
+        "C": {
+          "min": -10,
+          "max": 10
+        },
+        "t": {
+          "min": -5,
+          "max": 5
+        }
+      },
+      "derived": {},
+      "constraints": [],
+      "answer": "A*t*t + B*t + C",
+      "distractors": [
+        "A + B + C + t",
+        "A*t + B + C",
+        "A + B*t + C"
+      ],
+      "explanation": "Remainder upon division by (x − t) is p(t)."
+    },
+    "source_map": [
+      "PAM CB suite easy medium.pdf ID:07bcecac",
+      "Parametrized from CB Easy/Medium set"
+    ]
+  }
+]
