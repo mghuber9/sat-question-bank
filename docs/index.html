@@ -5,7 +5,6 @@
   <title>SAT Question Bank — Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Minimal styling -->
   <style>
     :root { --bg:#0b1020; --card:#121a2c; --text:#e8edf7; --muted:#9fb0d0; --accent:#5ea0ff; }
     html,body { margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
@@ -31,15 +30,12 @@
     .spacer { flex:1; }
     .muted { color:var(--muted); }
     .hint { font-size:12px; color:#9fb0d0; margin-left:6px; }
-    .sr { position:absolute; left:-9999px; }
   </style>
 
-  <!-- KaTeX (optional — will only render if your items use TeX delimiters) -->
+  <!-- KaTeX (optional) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <!-- Seeded RNG -->
-  <script src="https://cdn.jsdelivr.net/npm/seedrandom@3.0.5/seedrandom.min.js"></script>
 </head>
 <body>
 
@@ -101,11 +97,33 @@
 </footer>
 
 <script type="module">
-/*** ---------- tiny generator (browser version) ---------- ***/
-function makeRng(seed) {
-  const r = window.seedrandom(String(seed));
-  return r.quick ? () => r.quick() : () => r(); // fallback if quick() not present
+/*** ---------- deterministic RNG (no external deps) ---------- ***/
+function cyrb128(str) {
+  let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+  for (let i = 0, k; i < str.length; i++) {
+    k = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ k, 597399067);
+    h2 = Math.imul(h2 ^ k, 2869860233);
+    h3 = Math.imul(h3 ^ k, 951274213);
+    h4 = Math.imul(h4 ^ k, 2716044179);
+  }
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+  return [(h1 ^ h2 ^ h3 ^ h4) >>> 0];
 }
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function makeRng(seed) { const [s] = cyrb128(String(seed)); return mulberry32(s); }
+
+/*** ---------- generator helpers ---------- ***/
 function pick(spec, rnd) {
   if (!spec) throw new Error("Bad param spec");
   if (Array.isArray(spec.values)) {
@@ -169,7 +187,8 @@ function generateItem(template, seed="demo") {
   }
   throw new Error("Constraint not satisfiable after multiple attempts");
 }
-/*** ---------- data + UI logic ---------- ***/
+
+/*** ---------- data + UI ---------- ***/
 const FILES = {
   HOA: "data/MASTER_HOA_SAT.json",
   PAM: "data/MASTER_PAM_SAT.json",
@@ -192,16 +211,10 @@ const els = {
   status: document.getElementById("status")
 };
 
-function getActiveDiffs() {
-  return Array.from(els.diffs.querySelectorAll(".chip.active")).map(x => x.dataset.d);
-}
-function toggleChip(e) {
-  const chip = e.target.closest(".chip");
-  if (!chip) return;
-  chip.classList.toggle("active");
-}
+function getActiveDiffs() { return Array.from(els.diffs.querySelectorAll(".chip.active")).map(x => x.dataset.d); }
+function toggleChip(e) { const chip = e.target.closest(".chip"); if (chip) chip.classList.toggle("active"); }
 els.diffs.addEventListener("click", toggleChip);
-els.diffs.addEventListener("keydown", (e)=>{ if (e.key===" "||e.key==="Enter") { e.preventDefault(); toggleChip(e); } });
+els.diffs.addEventListener("keydown", e => { if (e.key===" "||e.key==="Enter") { e.preventDefault(); toggleChip(e); } });
 
 els.mode.addEventListener("change", () => {
   const ordered = els.mode.value === "ordered";
@@ -212,21 +225,18 @@ els.mode.addEventListener("change", () => {
 function seededShuffle(arr, seed) {
   const rnd = makeRng(seed);
   const a = arr.slice();
-  for (let i=a.length-1;i>0;i--) {
-    const j = Math.floor(rnd()* (i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
+  for (let i=a.length-1;i>0;i--) { const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
 
 function q(key, fallback=null){ return new URLSearchParams(location.search).get(key) ?? fallback; }
 function syncFromQuery() {
-  const mode = q("mode","random"); els.mode.value = mode;
-  const bank = q("bank","HOA"); els.bank.value = bank;
-  const count = +q("n","10"); els.count.value = count;
-  const seed = q("seed",""); els.seed.value = seed;
-  const start = +q("start","0"); els.start.value = start;
-  const per = +q("per","10"); els.per.value = per;
+  els.mode.value = q("mode","random");
+  els.bank.value = q("bank","HOA");
+  els.count.value = +q("n","10");
+  els.seed.value = q("seed","");
+  els.start.value = +q("start","0");
+  els.per.value = +q("per","10");
   const dif = (q("d","EMH")||"").split("").filter(Boolean);
   els.diffs.querySelectorAll(".chip").forEach(c=> c.classList.toggle("active", dif.includes(c.dataset.d)));
   els.mode.dispatchEvent(new Event("change"));
@@ -239,8 +249,20 @@ function updateQuery(params) {
 
 async function loadBanks(which) {
   const names = which==="ALL" ? Object.keys(FILES) : [which];
-  const results = await Promise.all(names.map(n => fetch(FILES[n]).then(r=>r.json())));
-  return results.flat();
+  const all = [];
+  for (const n of names) {
+    const url = FILES[n];
+    els.status.textContent = `Loading ${n}…`;
+    try {
+      const resp = await fetch(url, { cache: "no-store" });
+      if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+      const data = await resp.json();
+      all.push(data);
+    } catch (err) {
+      throw new Error(`Failed to load ${n} from ${url}: ${err.message || err}`);
+    }
+  }
+  return all.flat();
 }
 
 function renderKaTeX(container) {
@@ -269,20 +291,24 @@ async function generate() {
 
   updateQuery({mode, bank, n, seed, start, per, d: diffs.join("")});
 
-  let items = (await loadBanks(bank)).filter(it => diffs.includes(it.difficulty || "M"));
+  let items;
+  try {
+    items = (await loadBanks(bank)).filter(it => diffs.includes(it.difficulty || "M"));
+  } catch (e) {
+    els.list.innerHTML = "";
+    els.status.textContent = `⚠️ ${e.message}`;
+    return;
+  }
 
-  // Stable order for "ordered" (by domain/subtopic/id); otherwise we shuffle deterministically.
   if (mode === "ordered") {
     items.sort((a,b) => (a.domain||"").localeCompare(b.domain||"") ||
                         (a.subtopic||"").localeCompare(b.subtopic||"") ||
                         (a.id||"").localeCompare(b.id||""));
     items = items.slice(start, start + per);
   } else {
-    const shuffled = seededShuffle(items, seed + ":list");
-    items = shuffled.slice(0, Math.min(n, shuffled.length));
+    items = seededShuffle(items, seed + ":list").slice(0, Math.min(n, items.length));
   }
 
-  // Render
   els.list.innerHTML = "";
   let ok=0, fail=0;
   for (const it of items) {
@@ -300,13 +326,9 @@ async function generate() {
       ? `<div class="muted" style="margin-top:8px">Choices (shuffled locally)</div>
          <ul>${seededShuffle([gen.answer, ...gen.distractors], variantSeed + ":opts").map(o=>`<li>${o}</li>`).join("")}</ul>`
       : "";
-
     const expl = (!err && it.template && it.template.explanation)
       ? `<details><summary>Explanation</summary><div class="ans">${it.template.explanation}</div></details>` : "";
-
-    const rerollBtn = (!err)
-      ? `<button class="reroll" data-id="${id}">Re-roll</button>`
-      : "";
+    const rerollBtn = (!err) ? `<button class="reroll" data-id="${id}">Re-roll</button>` : "";
 
     card.innerHTML = `
       <div class="row">
@@ -325,10 +347,8 @@ async function generate() {
   els.status.textContent = `${ok} rendered, ${fail} failed. ${mode==="random" ? `Seed: ${seed}` : ""}`;
   renderKaTeX(document.body);
 
-  // Re-roll buttons
   els.list.querySelectorAll("button.reroll").forEach(btn => {
     btn.addEventListener("click", () => {
-      // In ordered mode, base seed is the id; append a bump to re-roll deterministically.
       const id = btn.dataset.id;
       const bump = Math.floor(Math.random()*1e6);
       els.seed.value = (els.mode.value === "ordered") ? `reroll-${bump}` : (els.seed.value || `reroll-${bump}`);
@@ -337,17 +357,29 @@ async function generate() {
   });
 }
 
-els.go.addEventListener("click", generate);
-els.share.addEventListener("click", () => {
+document.getElementById("go").addEventListener("click", generate);
+document.getElementById("share").addEventListener("click", () => {
   navigator.clipboard.writeText(location.href).then(()=> {
     els.status.textContent = "Link copied to clipboard.";
     setTimeout(()=> els.status.textContent = "", 1500);
   });
 });
 
-// boot
-syncFromQuery();
-generate();
+function init() { syncFromQuery(); generate(); }
+function syncFromQuery() {
+  els.mode.value = q("mode","random");
+  els.bank.value = q("bank","HOA");
+  els.count.value = +q("n","10");
+  els.seed.value = q("seed","");
+  els.start.value = +q("start","0");
+  els.per.value = +q("per","10");
+  const dif = (q("d","EMH")||"").split("").filter(Boolean);
+  els.diffs.querySelectorAll(".chip").forEach(c=> c.classList.toggle("active", dif.includes(c.dataset.d)));
+  els.mode.dispatchEvent(new Event("change"));
+}
+function q(key, fallback=null){ return new URLSearchParams(location.search).get(key) ?? fallback; }
+
+init();
 </script>
 </body>
 </html>
