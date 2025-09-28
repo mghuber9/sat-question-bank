@@ -782,30 +782,22 @@
     "domain": "Geometry & Trigonometry",
     "subtopic": "Squares \u2013 perimeter/area",
     "difficulty": "E",
-    "template": {
-      "stem": "Square P has side x. Square Q\u2019s perimeter is {{k}} greater than P\u2019s perimeter. Let f(x) be the area of Q. What is f(x)?",
-      "params": {
-        "k": {
-          "values": [
-            44,
-            60,
-            80,
-            100
-          ]
-        }
-      },
-      "derived": {
-        "sideQ": "x + k/4"
-      },
-      "constraints": [],
-      "answer": "(x + k/4) * (x + k/4)",
-      "distractors": [
-        "(x + k) * (x + k)",
-        "x * (x + k/4)",
-        "(x + k/2) * (x + k/2)"
-      ],
-      "explanation": "Perimeter(P)=4x. If Perimeter(Q)=4x+{{k}}, then side(Q)=x+{{k}}/4 \u21d2 Area = (x+{{k}}/4)^2."
-    },
+   "template": {
+  "stem": "Square P has side x. Square Q’s perimeter is {{k}} greater than P’s perimeter. Let f(x) be the area of Q. What is f(x)?",
+  "params": {
+    "k": { "values": [44, 60, 80, 100] }
+  },
+  "derived": {},
+  "constraints": [],
+  "answer": "(x + k/4) * (x + k/4)",
+  "distractors": [
+    "(x + k) * (x + k)",
+    "x * (x + k/4)",
+    "(x + k/2) * (x + k/2)"
+  ],
+  "explanation": "Perimeter(P)=4x. If Perimeter(Q)=4x+{{k}}, then side(Q)=x+{{k}}/4 ⇒ Area = (x+{{k}}/4)^2."
+}
+,
     "source_map": [
       "SAT 4 Math Mod 1 Q18"
     ]
