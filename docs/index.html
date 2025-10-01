@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>SAT Question Bank — Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- silence favicon 404 -->
   <link rel="icon" href="data:,">
 
   <style>
@@ -98,7 +99,7 @@
 </footer>
 
 <script>
-/* ---- show script errors in the UI ---- */
+/* surface script errors in the UI */
 window.addEventListener('error', e => {
   const s = document.getElementById('status');
   if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
@@ -109,34 +110,114 @@ function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=277348076
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 
-/*** generator helpers ***/
-function pick(spec,rnd){if(!spec)throw new Error("Bad param spec");if(Array.isArray(spec.values)){const a=spec.values;return a[Math.floor(rnd()*a.length)];}const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);for(let i=0;i<400;i++){const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));if(!exclude.has(v))return v;}throw new Error("Could not sample param (too restrictive).");}
-function renderStem(stem,vars){return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
-function evalExpr(expr,scope){const keys=["Math","Number",...Object.keys(scope)],vals=[Math,Number,...Object.values(scope)];if(typeof expr!=="string")return expr;if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr))throw new Error("Unsafe expression: "+expr);return Function(...keys,'"use strict"; return ('+expr+');')(...vals);}
-function safeEvalOrLiteral(expr,scope){if(typeof expr!=="string")return expr;const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);try{if(hasOp)return evalExpr(expr,scope);if(expr in scope)return scope[expr];return expr;}catch{return expr;}}
+/*** ---------- global display policy ---------- ***/
+const GLOBAL_FORMAT = {
+  preferFraction: true,    // try to show simple fraction for non-terminating decimals
+  maxDecimals: 3,          // otherwise round to ≤ 3 dp
+  fractionMaxDen: 200,     // cap denominator we consider “simple”
+  fractionTol: 1e-9
+};
 
-/*** generateItem with formatting + auto-pad distractors ***/
+/*** ---------- fraction + rounding helpers ---------- ***/
+function isNumber(x){ return typeof x === "number" && Number.isFinite(x); }
+
+// continued-fraction rational approximation
+function toFraction(x, maxDen=200, tol=1e-9){
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  if (!isFinite(x)) return null;
+  let h1=1, h0=0, k1=0, k0=1, b=x, a=Math.floor(b);
+  let h=a*h1+h0, k=a*k1+k0;
+  let prevErr = Math.abs(x - h/k);
+  while (k <= maxDen) {
+    if (Math.abs(x - h/k) <= tol) break;
+    b = 1/(b - a);
+    a = Math.floor(b);
+    const h2 = a*h + h1, k2 = a*k + k1;
+    h1=h; k1=k; h=h2; k=k2;
+    const err = Math.abs(x - h/k);
+    if (err > prevErr) break;
+    prevErr = err;
+  }
+  return { n: sign*h, d: k, err: Math.abs(sign*h/k - sign*x) };
+}
+
+// does x terminate within up to maxPlaces decimals?
+function terminatesWithin(x, maxPlaces){
+  const eps = 1e-10;
+  let t = x;
+  for (let k=0; k<=maxPlaces; k++){
+    if (Math.abs(t - Math.round(t)) < eps) return true;
+    t *= 10;
+  }
+  return false;
+}
+
+function formatDisplay(x, tmplFmt=null){
+  if (!isNumber(x)) return x;
+
+  // template-level override
+  if (tmplFmt) {
+    if (tmplFmt.fixed != null) return Number(x.toFixed(+tmplFmt.fixed));
+    if (tmplFmt.round != null) { const p = Math.pow(10, +tmplFmt.round); return Math.round(x*p)/p; }
+  }
+
+  const { preferFraction, maxDecimals, fractionMaxDen, fractionTol } = GLOBAL_FORMAT;
+
+  if (terminatesWithin(x, maxDecimals)) return Number(x.toFixed(maxDecimals));
+
+  if (preferFraction) {
+    const frac = toFraction(x, fractionMaxDen, fractionTol);
+    if (frac && frac.d > 1 && frac.err <= fractionTol) {
+      const g = (a,b)=>b?g(b,a%b):Math.abs(a);
+      const gg = g(Math.abs(frac.n), frac.d);
+      return `${(frac.n/gg)}\/${(frac.d/gg)}`;
+    }
+  }
+  return Number(x.toFixed(maxDecimals));
+}
+
+/*** ---------- generator helpers ---------- ***/
+function pick(spec,rnd){
+  if(!spec)throw new Error("Bad param spec");
+  if(Array.isArray(spec.values)){
+    const a=spec.values; return a[Math.floor(rnd()*a.length)];
+  }
+  const min=spec.min??0, max=spec.max??min, exclude=new Set(spec.exclude||[]);
+  const isInt=Number.isInteger(min)&&Number.isInteger(max);
+  for(let i=0;i<400;i++){
+    const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));
+    if(!exclude.has(v))return v;
+  }
+  throw new Error("Could not sample param (too restrictive).");
+}
+function renderStem(stem,vars){
+  return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));
+}
+function evalExpr(expr,scope){
+  const keys=["Math","Number",...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
+  if(typeof expr!=="string")return expr;
+  if (/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: "+expr);
+  return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
+}
+function safeEvalOrLiteral(expr,scope){
+  if(typeof expr!=="string")return expr;
+  const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
+  try{ if(hasOp) return evalExpr(expr,scope); if(expr in scope) return scope[expr]; return expr; }
+  catch{ return expr; }
+}
+
+/*** ---------- generateItem with fraction/rounding + auto-pad ---------- ***/
 function generateItem(template, seed = "demo") {
   const rnd = makeRng(seed);
   const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
-
-  // Optional numeric display formatting in template: { "format": { "fixed": N } } or { "round": N }
-  const fmt = template.format || template.display || null;
-  function applyFormat(x) {
-    if (fmt && typeof x === "number") {
-      if (fmt.fixed != null) return Number(x.toFixed(+fmt.fixed));
-      if (fmt.round != null) { const p = Math.pow(10, +fmt.round); return Math.round(x * p) / p; }
-    }
-    return x;
-  }
+  const tmplFmt = template.format || template.display || null;
 
   const MAX_TRIES = 250;
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
-    // 1) params
     const P = {};
     for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
 
-    // 2) derived
     const D = {};
     let okDer = true;
     for (const [k, expr] of Object.entries(derived)) {
@@ -144,7 +225,6 @@ function generateItem(template, seed = "demo") {
     }
     if (!okDer) continue;
 
-    // 3) constraints
     let ok = true;
     for (const c of constraints) {
       try { if (!evalExpr(c, { ...P, ...D })) { ok = false; break; } }
@@ -152,51 +232,49 @@ function generateItem(template, seed = "demo") {
     }
     if (!ok) continue;
 
-    // 4) answer + distractors (apply formatting before de-dup)
-    let ansVal = safeEvalOrLiteral(answer, { ...P, ...D });
-    ansVal = applyFormat(ansVal);
-
-    const opts = [];
+    const ansRaw = safeEvalOrLiteral(answer, { ...P, ...D });
+    const optsRaw = [];
     for (const d of distractors) {
-      let v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansVal });
-      v = applyFormat(v);
-      if (String(v) !== String(ansVal)) opts.push(v);
+      const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansRaw });
+      if (String(v) !== String(ansRaw)) optsRaw.push(v);
     }
 
-    // 5) auto-pad numeric distractors to ensure 4 choices total
-    if (typeof ansVal === "number" && opts.length < 3) {
+    const ansDisp = formatDisplay(ansRaw, tmplFmt);
+    const optsDisp = [];
+    const used = new Set([String(ansDisp)]);
+    for (const v of optsRaw) {
+      const f = formatDisplay(v, tmplFmt);
+      if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); }
+    }
+
+    // Auto-pad to 4 options when answer numeric
+    if (isNumber(ansRaw) && optsDisp.length < 3) {
       const padRng = makeRng(seed + ":auto");
-      const used = new Set([String(ansVal), ...opts.map(String)]);
-      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ansVal) || 1)) - 1));
-
-      const candidates = [ ansVal + mag, ansVal - mag, Math.floor(ansVal), Math.ceil(ansVal), ansVal * 1.1, ansVal * 0.9 ];
+      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ansRaw) || 1)) - 1));
+      const candidates = [ ansRaw + mag, ansRaw - mag, Math.floor(ansRaw), Math.ceil(ansRaw), ansRaw * 1.1, ansRaw * 0.9 ];
       for (const c of candidates) {
-        const v = applyFormat(c);
-        if (!Number.isNaN(v) && !used.has(String(v))) {
-          opts.push(v); used.add(String(v));
-          if (opts.length >= 3) break;
-        }
+        const f = formatDisplay(c, tmplFmt);
+        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); if (optsDisp.length >= 3) break; }
       }
-      while (opts.length < 3) {
+      while (optsDisp.length < 3) {
         const delta = (0.5 + padRng()) * mag * (padRng() < 0.5 ? -1 : 1);
-        const v = applyFormat(ansVal + delta);
-        if (!used.has(String(v))) { opts.push(v); used.add(String(v)); }
+        const f = formatDisplay(ansRaw + delta, tmplFmt);
+        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); }
       }
     }
 
-    // 6) return final item (cap distractors at 3)
     return {
       stem: renderStem(stem, { ...P, ...D }),
       params: P,
       derived: D,
-      answer: ansVal,
-      distractors: opts.slice(0, 3)
+      answer: ansDisp,
+      distractors: optsDisp.slice(0, 3)
     };
   }
   throw new Error("Constraint not satisfiable after multiple attempts");
 }
 
-/*** data + UI ***/
+/*** ---------- data + UI ---------- ***/
 const FILES = {
   HOA: "data/MASTER_HOA_SAT.json",
   PAM: "data/MASTER_PAM_SAT.json",
@@ -315,7 +393,7 @@ async function generate(){
 
   for (const it of items) {
     const id = it.id || "(no-id)";
-    // Include hidden seed in ordered mode so Re-roll changes variant
+    // include hidden seed in ordered mode so Re-roll changes variant
     const variantSeed = (mode === "ordered")
       ? (id + ":" + (els.seed.value || "0"))
       : (seed + ":" + id);
