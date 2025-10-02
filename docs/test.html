@@ -32,6 +32,8 @@
     ul.choices { list-style:none; padding-left:0; display:grid; gap:8px; margin:10px 0 0 0; }
     .choice { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1px solid #2a3a5c; border-radius:10px; cursor:pointer; }
     .choice input { margin-top:4px; }
+    .free-wrap { margin:10px 0 0; display:flex; gap:10px; align-items:center; }
+    .free-wrap input { width:200px; }
     details { margin-top:10px; }
     .k { color:#b5c7ea; }
     .tag { font-size:12px; padding:2px 8px; border:1px solid #2a3a5c; border-radius:999px; margin-left:6px; color:#cfe0ff; }
@@ -51,6 +53,7 @@
 <header>
   <h1>Digital SAT — Math Practice Test</h1>
   <div class="spacer"></div>
+  <a href="index.html" class="muted">Viewer</a>
   <div id="hdrTimer" class="timer muted">—:—</div>
 </header>
 
@@ -59,22 +62,25 @@
   <section id="start" class="grid">
     <div class="card">
       <h2 style="margin:0 0 8px">Setup</h2>
-      <div class="muted">This runner approximates the Digital SAT Math: two 22-question modules (35 min each) with an adaptive second module.</div>
+      <div class="muted">Two 22-question modules (35 min each). Module 2 adapts based on Module 1 performance.</div>
       <div style="height:12px"></div>
 
       <div class="controls">
         <label>Seed <input id="seed" placeholder="e.g. test-2025-09-28" style="width:220px"></label>
         <label>Domain mix
           <select id="domainPreset">
-            <option value="default">Default (HOA 35%, PAM 25%, PSDA 25%, GEOT 15%)</option>
+            <option value="default">Default (HOA 35, PAM 25, PSDA 25, GEOT 15)</option>
             <option value="even">Even across domains</option>
           </select>
         </label>
-        <span class="muted">Difficulty mixes are built in (Module 1 balanced; Module 2 adaptive).</span>
+        <span class="muted">Difficulty mixes and SPR/MC split are built in.</span>
       </div>
 
-      <div style="height:14px"></div>
-      <button id="btnStart" class="primary">Start Module 1</button>
+      <div class="row">
+        <button id="btnStart" class="primary">Start Module 1</button>
+        <div class="spacer"></div>
+        <label class="muted">Load results JSON <input type="file" id="loadJson" accept="application/json"></label>
+      </div>
     </div>
   </section>
 
@@ -129,33 +135,38 @@
         <summary>Review questions</summary>
         <div id="reviewList" class="grid" style="margin-top:10px"></div>
       </details>
-      <div style="height:12px"></div>
-      <button id="btnRestart" class="ghost">Back to start</button>
+      <div style="height:14px"></div>
+      <div class="row">
+        <button id="btnJson" class="ghost">Download JSON</button>
+        <button id="btnCsv" class="ghost">Copy CSV</button>
+        <div class="spacer"></div>
+        <button id="btnRestart" class="ghost">Back to start</button>
+      </div>
     </div>
   </section>
 </main>
 
 <script>
-/* ---------- show script errors in the UI ---------- */
+/* ---------- surface script errors in UI ---------- */
 window.addEventListener('error', e => {
   const t = document.getElementById('breakdown');
   if (t) t.textContent = '⚠️ ' + (e.error?.message || e.message || 'unknown error');
 });
 
-/*** ---------- CONSTANTS (you can tune) ---------- ***/
-// Domain weights used to draw items for each module
+/*** ---------- CONSTANTS ---------- ***/
+// Domain weights
 const DOMAIN_WEIGHTS = {
   default: { HOA: 0.35, PAM: 0.25, PSDA: 0.25, GEOT: 0.15 },
   even:    { HOA: 0.25, PAM: 0.25, PSDA: 0.25, GEOT: 0.25 }
 };
 
-// Module blueprints — APPROXIMATION of DSAT mixes
+// Difficulty mixes + SPR targets (approximate public info)
 const BLUEPRINT = {
-  module1: { total: 22, diffs: { E: 0.45, M: 0.40, H: 0.15 } },
-  module2_easy: { total: 22, diffs: { E: 0.60, M: 0.35, H: 0.05 } },
-  module2_hard: { total: 22, diffs: { E: 0.25, M: 0.45, H: 0.30 } },
+  module1:     { total: 22, diffs: { E: 0.45, M: 0.40, H: 0.15 }, spr: 7 },   // ~15 MC, 7 SPR
+  module2_easy:{ total: 22, diffs: { E: 0.65, M: 0.30, H: 0.05 }, spr: 7 },
+  module2_hard:{ total: 22, diffs: { E: 0.20, M: 0.45, H: 0.35 }, spr: 7 },
   timeMin: 35,
-  routeThreshold: 14 // if Module 1 correct >= 14 -> hard route; else easy
+  routeThreshold: 15 // ≥15 correct in M1 -> hard route
 };
 
 // Data files
@@ -166,13 +177,13 @@ const FILES = {
   GEOT: "data/MASTER_GEOT_SAT.json"
 };
 
-/*** ---------- RNG (same family as viewer) ---------- ***/
+/*** ---------- RNG ---------- ***/
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 function seededShuffle(arr, seed){ const rnd = makeRng(seed); const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-/*** ---------- Fraction & rounding (matches viewer) ---------- ***/
+/*** ---------- Fraction & rounding (match viewer) ---------- ***/
 const GLOBAL_FORMAT = { preferFraction:true, maxDecimals:3, fractionMaxDen:200, fractionTol:1e-9 };
 function isNumber(x){ return typeof x === "number" && Number.isFinite(x); }
 function toFraction(x, maxDen=200, tol=1e-9){
@@ -192,8 +203,21 @@ function formatDisplay(x, tmplFmt=null){
   if (preferFraction){ const f=toFraction(x, fractionMaxDen, fractionTol); if (f && f.d>1 && f.err<=fractionTol){ const g=(a,b)=>b?g(b,a%b):Math.abs(a); const gg=g(Math.abs(f.n),f.d); return `${(f.n/gg)}\/${(f.d/gg)}`; } }
   return Number(x.toFixed(maxDecimals));
 }
+function parseNumericInput(s){
+  s = String(s||'').trim();
+  if (!s) return null;
+  // fraction a/b
+  if (/^[+-]?\s*\d+\s*\/\s*\d+\s*$/.test(s)) {
+    const [a,b] = s.split('/').map(x=>Number(x));
+    if (b === 0) return null;
+    return a / b;
+  }
+  // decimal
+  const v = Number(s);
+  return Number.isFinite(v) ? v : null;
+}
 
-/*** ---------- Generator helpers (matches viewer) ---------- ***/
+/*** ---------- Generator helpers ---------- ***/
 function pick(spec,rnd){
   if(!spec)throw new Error("Bad param spec");
   if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
@@ -235,11 +259,12 @@ function generateItem(template, seed = "demo") {
       const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansRaw });
       if (String(v) !== String(ansRaw)) optsRaw.push(v);
     }
+
     const ansDisp = formatDisplay(ansRaw, tmplFmt);
     const optsDisp = []; const used = new Set([String(ansDisp)]);
     for (const v of optsRaw){ const f = formatDisplay(v, tmplFmt); if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); } }
 
-    // auto-pad to 4 options when numeric
+    // auto-pad to 4 options when numeric & insufficient distractors
     if (isNumber(ansRaw) && optsDisp.length < 3) {
       const padRng = makeRng(seed + ":auto");
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ansRaw) || 1)) - 1));
@@ -255,7 +280,10 @@ function generateItem(template, seed = "demo") {
       }
     }
 
-    return { stem: renderStem(stem, { ...P, ...D }), answer: ansDisp, distractors: optsDisp.slice(0, 3) };
+    // is student-produced response? (no distractors or explicit flag)
+    const isSPR = (Array.isArray(distractors) && distractors.length === 0) || template.type === "SPR" || template.response === "numeric";
+
+    return { stem: renderStem(stem, { ...P, ...D }), answerRaw: ansRaw, answer: ansDisp, distractors: optsDisp.slice(0, 3), isSPR };
   }
   throw new Error("Constraint not satisfiable after multiple attempts");
 }
@@ -270,64 +298,95 @@ async function loadAllBanks(){
     const data = await resp.json();
     all.push(...data);
   }
-  return all; // array of items with {id, domain, difficulty, template}
+  return all;
 }
 
-/*** ---------- Blueprint utils ---------- ***/
+/*** ---------- Selection helpers ---------- ***/
 function countsFromWeights(total, weights){
-  // proportional allocation with remainder fix
   const keys = Object.keys(weights);
   const raw = keys.map(k => ({k, v: total*weights[k]}));
   const base = {}; let sum = 0;
   for (const r of raw){ base[r.k] = Math.floor(r.v); sum += base[r.k]; }
   let rem = total - sum;
-  // give leftover to largest fractional parts
   raw.sort((a,b)=> (b.v - Math.floor(b.v)) - (a.v - Math.floor(a.v)));
   let i=0; while(rem>0){ base[raw[i%raw.length].k]++; rem--; i++; }
   return base;
 }
 
-/*** ---------- Item selection ---------- ***/
-function selectItems(pool, total, domainWeights, diffWeights, seed, used){
-  // Filter by domains/difficulties then allocate counts grid
+/* Select items honoring domain/diff weights and a target SPR count. */
+function selectItemsTyped(pool, total, domainWeights, diffWeights, sprTarget, seed, used){
   const domains = Object.keys(domainWeights);
   const diffs = Object.keys(diffWeights);
-  const byDom = {}; for (const d of domains) byDom[d] = pool.filter(x => x.domain === d);
-  const perDomain = countsFromWeights(total, domainWeights);
-  const selection = [];
-  let pickSeedBump = 0;
 
+  const perDomainTotal = countsFromWeights(total, domainWeights);
+  const perDomainSPR   = countsFromWeights(sprTarget, domainWeights);
+
+  const chosen = [];
+
+  let bump = 0;
+
+  // First pass: pick SPR items
   for (const d of domains){
-    const domainTotal = perDomain[d];
-    const perDiff = countsFromWeights(domainTotal, diffWeights);
+    const needDom = perDomainSPR[d] || 0;
+    if (needDom <= 0) continue;
+    const perDiff = countsFromWeights(needDom, diffWeights);
+
     for (const diff of diffs){
-      const candidates = byDom[d].filter(x => (x.difficulty||'M') === diff && !used.has(x.id));
-      // deterministic shuffle/pick
-      const shuf = seededShuffle(candidates, seed + ":sel:" + d + ":" + diff + ":" + (pickSeedBump++));
+      const candidates = pool.filter(x => x.domain===d && (x.difficulty||'M')===diff && !used.has(x.id) && x.__isSPR);
+      const shuf = seededShuffle(candidates, seed + ":spr:" + d + ":" + diff + ":" + (bump++));
       for (let i=0; i<perDiff[diff] && i<shuf.length; i++){
-        selection.push(shuf[i]);
-        used.add(shuf[i].id);
+        chosen.push(shuf[i]); used.add(shuf[i].id);
       }
     }
   }
 
-  // If short (not enough candidates), backfill with any unused
-  if (selection.length < total){
-    const any = pool.filter(x => !used.has(x.id));
-    const shuf = seededShuffle(any, seed + ":fill");
-    for (const it of shuf){
-      selection.push(it); used.add(it.id);
-      if (selection.length >= total) break;
+  // Second pass: fill remaining with MC items
+  const remaining = total - chosen.length;
+  const perDomainMC = countsFromWeights(remaining, domainWeights);
+  for (const d of domains){
+    const needDom = perDomainMC[d] || 0;
+    if (needDom <= 0) continue;
+    const perDiff = countsFromWeights(needDom, diffWeights);
+
+    for (const diff of diffs){
+      const candidates = pool.filter(x => x.domain===d && (x.difficulty||'M')===diff && !used.has(x.id) && !x.__isSPR);
+      const shuf = seededShuffle(candidates, seed + ":mc:" + d + ":" + diff + ":" + (bump++));
+      for (let i=0; i<perDiff[diff] && i<shuf.length; i++){
+        chosen.push(shuf[i]); used.add(shuf[i].id);
+      }
     }
   }
 
-  return selection.slice(0, total);
+  // If still short, backfill with anything unused
+  if (chosen.length < total){
+    const any = pool.filter(x => !used.has(x.id));
+    const shuf = seededShuffle(any, seed + ":fill");
+    for (const it of shuf){ chosen.push(it); used.add(it.id); if (chosen.length >= total) break; }
+  }
+
+  return chosen.slice(0, total);
 }
 
-/*** ---------- Simple scoring ---------- ***/
+/*** ---------- Scoring ---------- ***/
+function sprEqual(userStr, ansRaw){
+  // parse input
+  const v = parseNumericInput(userStr);
+  if (!isNumber(v)) return false;
+  // tolerance comparison vs raw numeric answer
+  const tol = 1e-6;
+  return Math.abs(v - Number(ansRaw)) <= tol;
+}
 function scoreModule(items, responses){
   let correct = 0;
-  items.forEach((it, idx) => { if (responses[idx] != null && responses[idx] === String(it.__answer)) correct++; });
+  items.forEach((it, idx) => {
+    const r = responses[idx];
+    if (r == null) return;
+    if (it.__isSPR){
+      if (sprEqual(r, it.__answerRaw)) correct++;
+    } else {
+      if (r === String(it.__answer)) correct++;
+    }
+  });
   return correct;
 }
 
@@ -354,6 +413,10 @@ const els = {
   btnStartM2: document.getElementById('btnStartM2'),
   btnRestart: document.getElementById('btnRestart'),
 
+  loadJson: document.getElementById('loadJson'),
+  btnJson: document.getElementById('btnJson'),
+  btnCsv: document.getElementById('btnCsv'),
+
   seed: document.getElementById('seed'),
   domainPreset: document.getElementById('domainPreset'),
 
@@ -377,7 +440,7 @@ let STATE = {
   timerId: null,
   secondsLeft: 0,
 
-  // For results
+  // results
   m1: { items: [], responses: [], correct: 0 },
   m2: { items: [], responses: [], correct: 0, route: 'easy' }
 };
@@ -389,7 +452,6 @@ function setVisible(section){
   els.results.classList.add('hidden');
   section.classList.remove('hidden');
 }
-
 function fmtTime(s){
   const m = Math.floor(s/60), r = s%60;
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
@@ -403,42 +465,54 @@ function renderQuestion(){
   const card = document.createElement('div');
   card.className = 'card';
 
-  // stem
   const stem = document.createElement('div');
   stem.className = 'stem';
   stem.innerHTML = item.__stem;
   card.appendChild(stem);
 
-  // choices
-  const ul = document.createElement('ul');
-  ul.className = 'choices';
-  const opts = seededShuffle([item.__answer, ...item.__distractors], STATE.seed + ":opts:" + item.id);
-  opts.forEach((o, j) => {
-    const li = document.createElement('li');
-    li.className = 'choice';
-    const id = `q${i}_opt${j}`;
-    li.innerHTML = `<input type="radio" name="q${i}" id="${id}" value="${o}">
-                    <label for="${id}"><span class="k">${String.fromCharCode(65+j)}.</span> ${o}</label>`;
-    ul.appendChild(li);
-  });
-  card.appendChild(ul);
+  if (item.__isSPR){
+    // free response
+    const wrap = document.createElement('div');
+    wrap.className = 'free-wrap';
+    wrap.innerHTML = `
+      <input type="text" id="spr_${i}" placeholder="Enter a number or fraction (e.g., 7/9)">
+      <button class="ghost" id="clr_${i}">Clear</button>`;
+    card.appendChild(wrap);
 
-  // preselect if answered
-  const prev = STATE.responses[i];
-  if (prev != null){
-    const radios = ul.querySelectorAll('input[type=radio]');
-    for (const r of radios){ if (r.value === prev) { r.checked = true; break; } }
+    const input = wrap.querySelector(`#spr_${i}`);
+    const prev = STATE.responses[i];
+    if (prev != null) input.value = prev;
+
+    input.addEventListener('input', () => { STATE.responses[i] = input.value; refreshProgress(); });
+    wrap.querySelector(`#clr_${i}`).addEventListener('click', () => { input.value=''; STATE.responses[i]=null; refreshProgress(); });
+  } else {
+    // multiple choice
+    const ul = document.createElement('ul');
+    ul.className = 'choices';
+    const opts = seededShuffle([item.__answer, ...item.__distractors], STATE.seed + ":opts:" + item.id);
+    opts.forEach((o, j) => {
+      const li = document.createElement('li');
+      li.className = 'choice';
+      const id = `q${i}_opt${j}`;
+      li.innerHTML = `<input type="radio" name="q${i}" id="${id}" value="${o}">
+                      <label for="${id}"><span class="k">${String.fromCharCode(65+j)}.</span> ${o}</label>`;
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+
+    const prev = STATE.responses[i];
+    if (prev != null){
+      const radios = ul.querySelectorAll('input[type=radio]');
+      for (const r of radios){ if (r.value === prev) { r.checked = true; break; } }
+    }
+    ul.addEventListener('change', e => {
+      if (e.target && e.target.name === `q${i}`) {
+        STATE.responses[i] = e.target.value;
+        refreshProgress();
+      }
+    });
   }
 
-  // handle change
-  ul.addEventListener('change', e => {
-    if (e.target && e.target.name === `q${i}`) {
-      STATE.responses[i] = e.target.value;
-      refreshProgress();
-    }
-  });
-
-  // render
   els.qcard.innerHTML = '';
   els.qcard.appendChild(card);
   renderMathInElement?.(card, { delimiters:[
@@ -454,17 +528,16 @@ function refreshProgress(){
   els.progress.innerHTML = '';
   for (let i=0;i<STATE.items.length;i++){
     const p = document.createElement('div');
-    p.className = 'pill' + (STATE.responses[i]!=null?' ans':'') + (STATE.flags[i]?' flag':'');
+    p.className = 'pill' + (STATE.responses[i]!=null && STATE.responses[i]!==''?' ans':'') + (STATE.flags[i]?' flag':'');
     p.textContent = i+1;
     p.addEventListener('click', () => { STATE.cursor = i; renderQuestion(); });
     els.progress.appendChild(p);
   }
 
-  // review grid
   els.reviewGrid.innerHTML = '';
   for (let i=0;i<STATE.items.length;i++){
     const b = document.createElement('button');
-    b.className = 'pill' + (STATE.responses[i]!=null?' ans':'') + (STATE.flags[i]?' flag':'');
+    b.className = 'pill' + (STATE.responses[i]!=null && STATE.responses[i]!==''?' ans':'') + (STATE.flags[i]?' flag':'');
     b.textContent = i+1;
     b.addEventListener('click', () => {
       STATE.cursor = i;
@@ -475,30 +548,40 @@ function refreshProgress(){
   }
 }
 
-/*** ---------- Module flow ---------- ***/
+/*** ---------- Module build / flow ---------- ***/
 function buildModule(kind){ // 'm1' | 'm2_easy' | 'm2_hard'
   const bp = (kind==='m1') ? BLUEPRINT.module1 :
              (kind==='m2_easy') ? BLUEPRINT.module2_easy : BLUEPRINT.module2_hard;
   const preset = DOMAIN_WEIGHTS[STATE.preset] || DOMAIN_WEIGHTS.default;
 
-  const items = selectItems(
-    BANK,
+  // prepare selection pool with isSPR flags
+  const pool = BANK.map(x => ({
+    ...x,
+    __isSPR: (x.template && Array.isArray(x.template.distractors) && x.template.distractors.length===0)
+             || (x.template && (x.template.type==='SPR' || x.template.response==='numeric'))
+  }));
+
+  const selected = selectItemsTyped(
+    pool,
     bp.total,
     preset,
     bp.diffs,
+    bp.spr,
     STATE.seed + ":" + kind,
     STATE.usedIds
   );
 
-  // generate renders now (so answers fixed)
-  const rendered = items.map((it, idx) => {
+  // generate renders now (fix answers)
+  const rendered = selected.map(it => {
     const seed = STATE.seed + ":" + kind + ":" + it.id;
     const gen = generateItem(it.template, seed);
     return {
       id: it.id,
       domain: it.domain,
       difficulty: it.difficulty || 'M',
+      __isSPR: gen.isSPR,
       __stem: gen.stem,
+      __answerRaw: gen.answerRaw,
       __answer: String(gen.answer),
       __distractors: gen.distractors.map(String)
     };
@@ -510,14 +593,13 @@ function buildModule(kind){ // 'm1' | 'm2_easy' | 'm2_hard'
 function startModule(n){ // 1 or 2
   STATE.modIndex = n;
   STATE.cursor = 0;
-  STATE.responses = new Array(n===1?BLUEPRINT.module1.total:BLUEPRINT.module2_easy.total).fill(null);
+  STATE.responses = new Array(STATE.items.length).fill(null);
   STATE.flags = new Array(STATE.responses.length).fill(false);
   STATE.secondsLeft = BLUEPRINT.timeMin*60;
   els.moduleTitle.innerHTML = `<strong>Module ${n}</strong> · ${STATE.responses.length} questions · <span class="timer" id="moduleTimer">${fmtTime(STATE.secondsLeft)}</span>`;
   els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
   renderQuestion();
   refreshProgress();
-  // timer
   clearInterval(STATE.timerId);
   STATE.timerId = setInterval(() => {
     STATE.secondsLeft--; els.moduleTimer.textContent = fmtTime(STATE.secondsLeft); els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
@@ -528,8 +610,6 @@ function startModule(n){ // 1 or 2
 
 function submitModule(){
   clearInterval(STATE.timerId);
-  // stash render answers into items (for scoring)
-  STATE.items.forEach((it)=>{ /* already has __answer */ });
   const correct = scoreModule(STATE.items, STATE.responses);
 
   if (STATE.modIndex === 1){
@@ -549,20 +629,38 @@ function submitModule(){
   }
 }
 
-/*** ---------- Results ---------- ***/
+/*** ---------- Results + Export ---------- ***/
+function csvEscape(s){ return `"${String(s).replace(/"/g,'""')}"`; }
+function buildCsv(state){
+  const rows = [['module','index','id','domain','difficulty','type','chosen','correct_answer','is_correct']];
+  function dump(mod, name){
+    mod.items.forEach((it,i)=>{
+      const chosen = mod.responses[i] ?? '';
+      const correct = it.__isSPR ? sprEqual(chosen, it.__answerRaw) : (chosen === String(it.__answer));
+      rows.push([name,i+1,it.id,it.domain,it.difficulty,it.__isSPR?'SPR':'MC',chosen,it.__answer,correct?'1':'0']);
+    });
+  }
+  dump(state.m1,'M1'); dump(state.m2,'M2');
+  return rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+}
+function download(name, content, type='application/octet-stream'){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 500);
+}
+
 function showResults(){
   const total = STATE.m1.items.length + STATE.m2.items.length;
   const correct = STATE.m1.correct + STATE.m2.correct;
 
-  // very rough 200–800 estimate (not official!)
-  const routeBoost = (STATE.m2.route === 'hard') ? 30 : 0; // tiny nudge for harder route
+  const routeBoost = (STATE.m2.route === 'hard') ? 30 : 0; // tiny practice-only nudge
   const scaled = Math.round(200 + ((correct/total) * 600) + routeBoost);
   const scaledClamped = Math.max(200, Math.min(800, scaled));
 
   els.scoreline.innerHTML = `
     <div><strong>Total correct:</strong> ${correct} / ${total}
       <span class="tag">Module 2: ${STATE.m2.route.toUpperCase()}</span>
-      <span class="tag">Approx. scaled: <strong>${scaledClamped}</strong> (for practice only)</span>
+      <span class="tag">Approx. scaled: <strong>${scaledClamped}</strong> (practice only)</span>
     </div>`;
 
   // breakdown
@@ -577,24 +675,23 @@ function showResults(){
   html += `</div>`;
   els.breakdown.innerHTML = html;
 
-  // detailed review
+  // review
   const renderList = (module, name) => {
     const wrap = document.createElement('div');
     wrap.innerHTML = `<h3 style="margin:0 0 8px">${name} — ${module.correct}/${module.items.length} correct</h3>`;
     module.items.forEach((it, i) => {
-      const chosen = module.responses[i];
-      const ok = (chosen === String(it.__answer));
+      const chosen = module.responses[i] ?? '';
+      const ok = it.__isSPR ? sprEqual(chosen, it.__answerRaw) : (chosen === String(it.__answer));
       const div = document.createElement('div');
       div.className = 'card';
       div.innerHTML = `
         <div class="row">
-          <div><span class="tag">${it.domain}</span><span class="tag">${it.difficulty}</span></div>
+          <div><span class="tag">${it.domain}</span><span class="tag">${it.difficulty}</span><span class="tag">${it.__isSPR?'SPR':'MC'}</span></div>
           <div class="spacer"></div>
           <div class="${ok?'good':'bad'}">${ok?'Correct':'Incorrect'}</div>
         </div>
         <div class="stem" style="margin-top:8px">${it.__stem}</div>
         <div class="k" style="margin-top:8px"><strong>Answer:</strong> ${it.__answer}</div>`;
-      // we can’t easily show the full original explanation here unless you want to also store it at generation time
       wrap.appendChild(div);
     });
     return wrap;
@@ -603,24 +700,41 @@ function showResults(){
   els.reviewList.appendChild(renderList(STATE.m1, 'Module 1'));
   els.reviewList.appendChild(renderList(STATE.m2, 'Module 2'));
 
+  // export buttons
+  els.btnJson.onclick = () => {
+    const exportObj = { meta:{seed:STATE.seed,preset:STATE.preset,route:STATE.m2.route}, state:STATE };
+    download(`sat-math-results-${STATE.seed}.json`, JSON.stringify(exportObj,null,2), 'application/json');
+  };
+  els.btnCsv.onclick = async () => {
+    const csv = buildCsv(STATE);
+    await navigator.clipboard.writeText(csv);
+    els.breakdown.textContent = 'CSV copied to clipboard.';
+    setTimeout(()=>{ els.breakdown.textContent=''; }, 1500);
+  };
+
   setVisible(els.results);
 }
 
 /*** ---------- Handlers ---------- ***/
-els.btnStart.addEventListener('click', async () => {
-  els.btnStart.disabled = true;
-  if (!BANK.length) BANK = await loadAllBanks();
+const ui = {
+  startM1: async () => {
+    if (!BANK.length) BANK = await loadAllBanks();
 
-  STATE.seed = els.seed.value || new Date().toISOString().slice(0,10);
-  STATE.preset = els.domainPreset.value || 'default';
-  STATE.usedIds = new Set();
+    STATE.seed = els.seed.value || new Date().toISOString().slice(0,10);
+    STATE.preset = els.domainPreset.value || 'default';
+    STATE.usedIds = new Set();
 
-  // Build Module 1
-  STATE.items = buildModule('m1');
-  startModule(1);
-  els.btnStart.disabled = false;
-});
+    // build module 1
+    const bp = BLUEPRINT.module1;
+    STATE.items = buildModule('m1');
+    // ensure UI knows length before starting timer
+    STATE.responses = new Array(STATE.items.length).fill(null);
+    STATE.flags = new Array(STATE.items.length).fill(false);
+    startModule(1);
+  }
+};
 
+els.btnStart.addEventListener('click', ui.startM1);
 els.btnSubmit.addEventListener('click', () => submitModule());
 els.btnReview.addEventListener('click', () => els.reviewGrid.classList.toggle('hidden'));
 els.btnPrev.addEventListener('click', () => { if (STATE.cursor>0){ STATE.cursor--; renderQuestion(); }});
@@ -628,14 +742,26 @@ els.btnNext.addEventListener('click', () => { if (STATE.cursor<STATE.items.lengt
 els.btnFlag.addEventListener('click', () => { STATE.flags[STATE.cursor] = !STATE.flags[STATE.cursor]; refreshProgress(); });
 
 els.btnStartM2.addEventListener('click', () => {
-  // Build module 2 based on route
   const kind = (STATE.m2.route==='hard') ? 'm2_hard' : 'm2_easy';
   STATE.items = buildModule(kind);
+  STATE.responses = new Array(STATE.items.length).fill(null);
+  STATE.flags = new Array(STATE.items.length).fill(false);
   startModule(2);
 });
 
-els.btnRestart.addEventListener('click', () => {
-  setVisible(els.start);
+els.btnRestart.addEventListener('click', () => setVisible(els.start));
+
+els.loadJson.addEventListener('change', async (e) => {
+  const file = e.target.files?.[0]; if (!file) return;
+  const text = await file.text();
+  try {
+    const data = JSON.parse(text);
+    if (!data || !data.state) throw new Error('Bad file format');
+    STATE = data.state;
+    showResults();
+  } catch(err) {
+    alert('Could not load results JSON: ' + err.message);
+  }
 });
 
 /*** ---------- Boot ---------- ***/
