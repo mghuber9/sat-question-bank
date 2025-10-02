@@ -1,445 +1,476 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>SAT Practice — Test Runner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <title>SAT Practice — Math</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
 
-  <!-- KaTeX -->
+  <!-- KaTeX for reference-sheet math -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 
   <style>
-    /* ===== Bluebook-like light theme ===== */
     :root{
-      --bg:#f6f8fc;            /* page background */
-      --card:#ffffff;          /* question card, panels */
-      --border:#d6deeb;        /* soft border */
-      --text:#111827;          /* primary text */
-      --muted:#5b6b82;         /* muted text */
-      --blue:#2563eb;          /* primary accent (blue-600) */
-      --blue-d:#1e40af;        /* darker accent */
-      --bar-bg:#e7eefc;        /* header / progress background */
-      --pill:#eef3ff;          /* timer pill background */
-      --shadow:0 6px 16px rgba(17,24,39,.08);
-      --shadow-strong:0 10px 30px rgba(17,24,39,.15);
-      --radius:12px;
+      --blue-900:#163d86;  /* banner */
+      --blue-800:#1f4fa7;
+      --blue-700:#2a66cf;  /* buttons/accent */
+      --blue-100:#e8f1ff;
+      --text:#0f172a;
+      --muted:#486080;
+      --card:#ffffff;
+      --bg:#f6f8fc;
+      --border:#d8e1f1;
+      --shadow:0 2px 10px rgba(15, 23, 42, .08);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 
-    /* Top bar */
-    .topbar{
-      position:sticky;top:0;z-index:30;
-      background:var(--bar-bg);
-      border-bottom:1px solid var(--border);
-      padding:10px 16px; display:flex; align-items:center; gap:12px;
+    /* Top bar (Bluebook-ish) */
+    .top{
+      position:sticky;top:0;z-index:50;
+      background:var(--blue-900);color:#fff;
+      box-shadow:var(--shadow);
     }
-    .brand{font-weight:700}
-    .pill{background:var(--pill); color:#0b1b50; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:700;}
-    .spacer{flex:1}
-    .btn{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;box-shadow:var(--shadow);}
-    .btn:hover{filter:brightness(1.02)}
-    .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:var(--shadow-strong);}
-    .btn.secondary{background:#fff;color:#0b1b50}
+    .top .row{
+      display:flex;align-items:center;gap:16px;
+      padding:10px 16px;
+    }
+    .brand{font-weight:700;letter-spacing:.2px}
+    .subtle{opacity:.9}
+    .gutter{flex:1}
+    .pill{background:rgba(255,255,255,.12);padding:6px 10px;border-radius:999px}
+    .btn{
+      background:var(--blue-700);color:#fff;border:none;border-radius:8px;
+      padding:8px 12px;cursor:pointer;font-weight:600;
+    }
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,.5)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .timer{min-width:78px;text-align:center;font-variant-numeric:tabular-nums}
 
-    /* Progress bar */
-    .progress-wrap{background:var(--bar-bg);border-bottom:1px solid var(--border);padding:6px 16px}
-    .progress{height:6px;background:#dfe8fb;border-radius:999px;overflow:hidden}
-    .progress>div{height:100%;background:linear-gradient(90deg,#60a5fa,#2563eb);width:0%}
-
-    /* Layout */
+    /* Main layout */
     .wrap{max-width:980px;margin:18px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
-    .qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .qnum{font-weight:700;background:#f1f5ff;border:1px solid var(--border);border-radius:10px;padding:6px 10px}
-    .review-toggle{margin-left:auto}
-    .review-toggle input{display:none}
-    .review-toggle label{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--muted);cursor:pointer}
-    .review-toggle input:checked+label{background:#fff8e1;border-color:#f7d063;color:#8a6a00}
-
-    .stem{font-size:18px;line-height:1.5;white-space:pre-wrap}
-    .choices{margin-top:14px;display:grid;gap:10px}
-    .choice{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer;box-shadow:var(--shadow)}
-    .choice input{margin-top:4px}
-    .choice:hover{border-color:#b5c5ea}
-
-    .free{display:flex;gap:8px;align-items:center}
-    .free input[type="text"]{flex:1;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);box-shadow:var(--shadow)}
-
-    /* Bottom bar */
-    .bottombar{
-      position:sticky;bottom:0;z-index:20;background:var(--bar-bg);border-top:1px solid var(--border);
-      display:flex;gap:12px;align-items:center;padding:10px 16px
+    .card{
+      background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;
+      box-shadow:var(--shadow);
     }
-    .meta{color:var(--muted)}
-    .right{margin-left:auto;display:flex;gap:8px}
+    .qhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .qnum{background:var(--blue-100);border:1px solid var(--border);color:var(--blue-900);width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-weight:700}
+    .stem{font-size:17px}
+    .choices{margin-top:12px;display:grid;gap:8px}
+    .choice{border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;background:#fff}
+    .choice:hover{border-color:var(--blue-700)}
+    .choice.selected{outline:2px solid var(--blue-700)}
+    .constructed{display:flex;gap:10px;align-items:center;margin-top:10px}
+    .constructed input{padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px}
 
-    /* ===== Floating windows (draggable/resizable) ===== */
-    .float-win{
-      position:fixed; inset:auto; top:80px; left:60px;
-      width:560px; height:420px; background:var(--card); border:1px solid var(--border);
-      border-radius:12px; box-shadow:var(--shadow-strong); display:none; z-index:50; resize:both; overflow:hidden;
-    }
-    .float-win.active{display:block}
-    .titlebar{display:flex;align-items:center;gap:10px;background:#f2f5ff;border-bottom:1px solid var(--border);padding:8px 10px; cursor:move; user-select:none}
-    .titlebar .spacer{flex:1}
-    .win-body{height:100%;display:flex;flex-direction:column}
-    .iframe-holder{flex:1}
-    .iframe-holder iframe{width:100%;height:100%;border:0}
-    .tabs{display:flex;gap:8px;margin-left:8px}
-    .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer}
-    .tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-    .close-x{background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
-
-    /* Reference specifics */
-    .ref-wrap{padding:14px 16px 18px 16px;overflow:auto;height:100%}
-    .ref-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-    .ref-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:var(--shadow)}
-    .ref-card h4{margin:0 0 6px 0;font-weight:700}
+    .nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:10px}
     .muted{color:var(--muted)}
-    @media (max-width:860px){ .ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
-    @media (max-width:520px){ .ref-grid{grid-template-columns:1fr} }
+    .katex-display{margin:0.4em 0}
+
+    /* Tools (calculator / reference) — floating windows */
+    .tool-window{
+      position:fixed;left:40px;top:90px;width:460px;background:#fff;border:1px solid var(--border);
+      border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.18);display:none;flex-direction:column;z-index:60;
+    }
+    .tool-window.active{display:flex}
+    .titlebar{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:10px 12px;background:var(--blue-800);color:#fff;border-radius:12px 12px 0 0;
+      cursor:grab; user-select:none;
+    }
+    .titlebar:active{cursor:grabbing}
+    .titlebar h3{margin:0;font-size:14px;font-weight:700;letter-spacing:.2px}
+    .tool-actions{display:flex;gap:6px}
+    .tiny{
+      background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer
+    }
+    .tiny:hover{background:rgba(255,255,255,.25)}
+    .content{padding:0;background:#fff;border-radius:0 0 12px 12px}
+    .tabs{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--border)}
+    .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer}
+    .tab.active{background:var(--blue-100);border-color:var(--blue-700);color:var(--blue-900);font-weight:600}
+    .iframe-holder{height:430px}
+    .iframe-holder iframe{width:100%;height:100%;border:0;border-radius:0 0 12px 12px}
+
+    /* Reference sheet styling */
+    .ref-wrap{padding:12px}
+    .ref-grid{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:12px}
+    @media (min-width:800px){ .ref-grid{grid-template-columns:repeat(3, minmax(0,1fr));} }
+    .ref-card{border:1px solid var(--border);border-radius:10px;background:#fff;padding:10px}
+    .ref-card h4{margin:0 0 6px 0;color:var(--blue-900);font-size:14px}
+    .ref-card svg{display:block;background:#fff;border-radius:8px;margin:2px 0 6px 0}
   </style>
 </head>
 <body>
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div class="brand">Section 2, Module <span id="modNo">1</span>: Math</div>
-    <div class="pill" id="timer">35:00</div>
-    <div class="spacer"></div>
-    <button class="btn" id="btnCalc">Calculator</button>
-    <button class="btn" id="btnRef">Reference</button>
+  <!-- Top bar -->
+  <div class="top">
+    <div class="row">
+      <div class="brand">Section 1 — Math</div>
+      <div class="pill timer" id="timer">35:00</div>
+      <div class="gutter"></div>
+      <button class="btn secondary" id="btnRef">Reference</button>
+      <button class="btn" id="btnCalc">Calculator</button>
+    </div>
   </div>
 
-  <!-- PROGRESS -->
-  <div class="progress-wrap">
-    <div class="progress"><div id="progFill"></div></div>
-  </div>
-
-  <!-- QUESTION AREA -->
+  <!-- Main -->
   <main class="wrap">
-    <div class="card">
+    <div class="card" id="statusCard">
+      <div class="muted" id="status">Loading module…</div>
+    </div>
+
+    <div class="card" id="qCard" style="display:none">
       <div class="qhead">
-        <div class="qnum">Question <span id="qIndex">1</span> of <span id="qTotal">22</span></div>
-        <div class="review-toggle">
-          <input id="mark" type="checkbox">
-          <label for="mark">⭐ Mark for Review</label>
-        </div>
+        <div class="qnum" id="qNum">1</div>
+        <div class="muted" id="qLoc">Question 1 of 22</div>
       </div>
-      <div id="stem" class="stem"></div>
-      <div id="choices" class="choices"></div>
+      <div class="stem" id="stem">—</div>
+
+      <div id="mcWrap" class="choices" style="display:none"></div>
+
+      <div id="crWrap" class="constructed" style="display:none">
+        <label for="crInput" class="muted">Answer:</label>
+        <input id="crInput" type="text" inputmode="decimal" autocomplete="off" />
+      </div>
+
+      <div class="nav">
+        <button class="btn secondary" id="prevBtn">Back</button>
+        <div class="muted" id="navStatus">—</div>
+        <button class="btn" id="nextBtn">Next</button>
+      </div>
     </div>
   </main>
 
-  <!-- BOTTOM BAR -->
-  <div class="bottombar">
-    <div class="meta"><span id="routeLabel">Module 1</span></div>
-    <div class="right">
-      <button class="btn secondary" id="btnBack">Back</button>
-      <button class="btn primary" id="btnNext">Next</button>
+  <!-- CALCULATOR WINDOW -->
+  <div id="calcWin" class="tool-window" style="width:520px;left:40px;top:100px;">
+    <div class="titlebar" data-handle>
+      <h3>Calculator</h3>
+      <div class="tool-actions">
+        <a class="tiny" target="_blank" rel="noopener" href="https://www.desmos.com/calculator?lang=en">Pop out ↗</a>
+        <button class="tiny" data-close aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="tabs">
+        <button class="tab active" data-tab="graphing">Graphing</button>
+        <button class="tab" data-tab="scientific">Scientific</button>
+      </div>
+      <div class="iframe-holder" id="calcG">
+        <!-- Force expressions panel for graphing -->
+        <iframe src="https://www.desmos.com/calculator?embed&lang=en&expressions=1&expressionsCollapsed=false&zoomButtons=1"></iframe>
+      </div>
+      <div class="iframe-holder" id="calcS" style="display:none">
+        <iframe src="https://www.desmos.com/scientific?embed&lang=en"></iframe>
+      </div>
     </div>
   </div>
 
-  <!-- ===== FLOATING WINDOWS ===== -->
-
-  <!-- Calculator window -->
-  <section class="float-win" id="calcWin" style="top:90px;left:60px;width:640px;height:480px">
+  <!-- REFERENCE WINDOW -->
+  <div id="refWin" class="tool-window" style="width:720px;left:100px;top:140px;">
     <div class="titlebar" data-handle>
-      <strong>Calculator</strong>
-      <div class="tabs">
-        <button class="tab active" data-tab="g">Graphing</button>
-        <button class="tab" data-tab="s">Scientific</button>
+      <h3>Reference Sheet</h3>
+      <div class="tool-actions">
+        <button class="tiny" data-close aria-label="Close">✕</button>
       </div>
-      <div class="spacer"></div>
-      <a class="btn" target="_blank" rel="noopener" href="https://www.desmos.com/calculator?lang=en" title="Pop out">Pop out ↗</a>
-      <button class="close-x" data-close>Close</button>
     </div>
-    <div class="win-body">
-      <div class="iframe-holder" id="calcG"><iframe src="https://www.desmos.com/calculator?embed"></iframe></div>
-      <div class="iframe-holder" id="calcS" style="display:none"><iframe src="https://www.desmos.com/scientific?embed"></iframe></div>
-    </div>
-  </section>
-
-  <!-- Reference window -->
-  <section class="float-win" id="refWin" style="top:140px;left:260px;width:560px;height:460px">
-    <div class="titlebar" data-handle>
-      <strong>Reference Sheet</strong>
-      <div class="spacer"></div>
-      <button class="close-x" data-close>Close</button>
-    </div>
-    <div class="win-body">
+    <div class="content">
       <div class="ref-wrap" id="refWrap">
         <div class="ref-grid">
-          <div class="ref-card"><h4>Circle</h4><div>A = \( \pi r^2 \)</div><div>C = \( 2\pi r \)</div></div>
-          <div class="ref-card"><h4>Rectangle</h4><div>A = \( \ell w \)</div></div>
-          <div class="ref-card"><h4>Triangle</h4><div>A = \( \frac12 bh \)</div><div>\( c^2 = a^2 + b^2 \)</div></div>
-          <div class="ref-card"><h4>Prism</h4><div>V = \( \ell w h \)</div></div>
-          <div class="ref-card"><h4>Cylinder</h4><div>V = \( \pi r^2 h \)</div></div>
-          <div class="ref-card"><h4>Sphere</h4><div>V = \( \frac{4}{3}\pi r^3 \)</div></div>
-          <div class="ref-card"><h4>Cone</h4><div>V = \( \frac{1}{3}\pi r^2 h \)</div></div>
-          <div class="ref-card"><h4>Pyramid</h4><div>V = \( \frac{1}{3}\ell w h \)</div></div>
+          <div class="ref-card">
+            <h4>Circle</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <circle cx="40" cy="35" r="22" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <line x1="40" y1="35" x2="62" y2="35" stroke="#7c8bb0" stroke-width="2"/>
+              <circle cx="40" cy="35" r="2" fill="#7c8bb0"/>
+              <text x="66" y="39" fill="#7c8bb0" font-size="12">r</text>
+            </svg>
+            <div>A = \( \pi r^2 \)</div>
+            <div>C = \( 2\pi r \)</div>
+          </div>
+
+          <div class="ref-card">
+            <h4>Rectangle</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <rect x="22" y="20" width="76" height="36" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="58" y="18" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ</text>
+              <text x="100" y="40" fill="#7c8bb0" font-size="12">w</text>
+            </svg>
+            <div>A = \( \ell w \)</div>
+          </div>
+
+          <div class="ref-card">
+            <h4>Right Triangle</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <polygon points="18,56 90,56 18,18" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <rect x="18" y="50" width="8" height="6" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="54" y="66" text-anchor="middle" fill="#7c8bb0" font-size="12">a</text>
+              <text x="8"  y="38" fill="#7c8bb0" font-size="12">b</text>
+              <text x="84" y="28" fill="#7c8bb0" font-size="12">c</text>
+            </svg>
+            <div>A = \( \tfrac12 bh \)</div>
+            <div>\( c^2 = a^2 + b^2 \)</div>
+          </div>
+
+          <div class="ref-card">
+            <h4>Prism & Cylinder</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <rect x="12" y="20" width="36" height="28" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="30" y="18" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ</text>
+              <text x="50" y="38" fill="#7c8bb0" font-size="12">w</text>
+              <text x="30" y="56" text-anchor="middle" fill="#7c8bb0" font-size="12">h</text>
+
+              <ellipse cx="92" cy="26" rx="16" ry="8" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <path d="M76 26v20c0 5 32 5 32 0V26" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="92" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">h</text>
+            </svg>
+            <div>Prism: \( V = \ell w h \)</div>
+            <div>Cylinder: \( V = \pi r^2 h \)</div>
+          </div>
+
+          <div class="ref-card">
+            <h4>Sphere</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <circle cx="60" cy="35" r="22" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <ellipse cx="60" cy="35" rx="22" ry="8" fill="none" stroke="#7c8bb0" stroke-width="2"/>
+            </svg>
+            <div>V = \( \tfrac{4}{3} \pi r^3 \)</div>
+          </div>
+
+          <div class="ref-card">
+            <h4>Cone & Pyramid</h4>
+            <svg width="100%" viewBox="0 0 120 70">
+              <polygon points="16,52 44,52 30,18" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="30" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">r</text>
+              <polygon points="72,52 104,52 88,20" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
+              <text x="88" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ, w</text>
+            </svg>
+            <div>Cone: \( V = \tfrac{1}{3}\pi r^2 h \)</div>
+            <div>Pyramid: \( V = \tfrac{1}{3}\,\ell w h \)</div>
+          </div>
         </div>
+
+        <h4 style="margin:14px 0 6px 0;color:var(--blue-900)">Special Right Triangles</h4>
+        <div class="muted" style="line-height:1.6">
+          \(30^\circ\!-\!60^\circ\!-\!90^\circ\): sides \(x, x\sqrt{3}, 2x\). &nbsp;
+          \(45^\circ\!-\!45^\circ\!-\!90^\circ\): sides \(s, s, s\sqrt{2}\).
+        </div>
+
         <p class="muted" style="margin-top:12px">
-          The number of degrees of arc in a circle is 360. The number of radians of arc in a circle is \(2\pi\).
-          The sum of the measures in degrees of the angles of a triangle is 180.
+          Degrees of arc in a circle: 360.  Radians of arc in a circle: \(2\pi\).  
+          Angle sum in a triangle: 180.
         </p>
-        <h4 style="margin:8px 0 6px 0">Special Right Triangles</h4>
-        <p>\(30^\circ\!-\!60^\circ\!-\!90^\circ\): sides \(x, x\sqrt{3}, 2x\). &nbsp;
-           \(45^\circ\!-\!45^\circ\!-\!90^\circ\): sides \(s, s, s\sqrt{2}\).</p>
       </div>
     </div>
-  </section>
+  </div>
 
 <script>
-/* -------- CONFIG -------- */
-const MODULE_TIME_SECONDS = 35 * 60;
-const MIX = { m1:{E:13,M:7,H:2}, m2_easy:{E:14,M:8,H:0}, m2_hard:{E:6,M:8,H:8} };
-const ROUTE_THRESHOLD = 14;
-const FILES = {
+/* -----------------------------------------------------------
+   ERROR SURFACE
+----------------------------------------------------------- */
+window.addEventListener('error', e => {
+  const s = document.getElementById('status');
+  if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
+});
+
+/* -----------------------------------------------------------
+   DRAGGABLE WINDOWS (fixed to drag only on titlebar)
+----------------------------------------------------------- */
+function makeDraggable(win){
+  const handle = win.querySelector('[data-handle]');
+  let startX=0, startY=0, startL=0, startT=0, dragging=false, moved=false, zTop=60;
+  const THRESH = 3;
+
+  function onMouseDown(e){
+    if (e.button !== 0) return;
+    dragging=true; moved=false;
+    const rect = win.getBoundingClientRect();
+    startX = e.clientX; startY = e.clientY;
+    startL = rect.left; startT = rect.top;
+    win.style.zIndex = (++zTop).toString();
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    e.preventDefault();
+  }
+  function onMouseMove(e){
+    if (!dragging) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved && (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH)) moved = true;
+    if (!moved) return;
+    const nx = Math.max(4, Math.min(window.innerWidth - 80, startL + dx));
+    const ny = Math.max(4, Math.min(window.innerHeight - 60, startT + dy));
+    win.style.left = nx + 'px';
+    win.style.top  = ny + 'px';
+  }
+  function onMouseUp(){
+    dragging=false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+  handle.addEventListener('mousedown', onMouseDown);
+  win.addEventListener('mousedown', ()=> win.style.zIndex=(++zTop).toString());
+  win.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => win.classList.remove('active')));
+}
+
+makeDraggable(document.getElementById('calcWin'));
+makeDraggable(document.getElementById('refWin'));
+
+/* -----------------------------------------------------------
+   TOOLS: open/close + tabs
+----------------------------------------------------------- */
+const calcWin = document.getElementById('calcWin');
+const refWin  = document.getElementById('refWin');
+
+document.getElementById('btnCalc').addEventListener('click', ()=> calcWin.classList.toggle('active'));
+document.getElementById('btnRef').addEventListener('click',  ()=> refWin.classList.toggle('active'));
+
+(function wireCalcTabs(){
+  const g = document.getElementById('calcG');
+  const s = document.getElementById('calcS');
+  const tabs = calcWin.querySelectorAll('.tab');
+  tabs.forEach(t => t.addEventListener('click', ()=>{
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    if (t.dataset.tab === 'graphing'){ g.style.display='block'; s.style.display='none'; }
+    else { s.style.display='block'; g.style.display='none'; }
+  }));
+})();
+
+/* -----------------------------------------------------------
+   LIGHTWEIGHT DEMO RENDERER
+   (You can replace this later with your full test engine.
+    For now it loads a few items and renders MC/CR.)
+----------------------------------------------------------- */
+
+/*** Deterministic RNG (same as viewer) ***/
+function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
+function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
+function seededShuffle(arr,seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pick(spec,rnd){if(!spec)throw new Error("Bad param spec");if(Array.isArray(spec.values)){const a=spec.values;return a[Math.floor(rnd()*a.length)];}const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);for(let i=0;i<400;i++){const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));if(!exclude.has(v))return v;}throw new Error("Could not sample param.");}
+function renderStem(stem,vars){return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+function evalExpr(expr,scope){const keys=["Math","Number",...Object.keys(scope)],vals=[Math,Number,...Object.values(scope)];if(typeof expr!=="string")return expr;if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr))throw new Error("Unsafe expression: "+expr);return Function(...keys,'"use strict"; return ('+expr+');')(...vals);}
+function safeEvalOrLiteral(expr,scope){if(typeof expr!=="string")return expr;const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);try{if(hasOp)return evalExpr(expr,scope);if(expr in scope)return scope[expr];return expr;}catch{return expr;}}
+function generateItem(tpl, seed="demo"){
+  const rnd=makeRng(seed);
+  const {stem,params={},derived={},constraints=[],answer,distractors=[]}=tpl;
+  const MAX=250;
+  for(let attempt=0;attempt<MAX;attempt++){
+    const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
+    const D={}; let okDer=true; for(const[k,e] of Object.entries(derived)){try{D[k]=evalExpr(e,{...P,...D});}catch{okDer=false;break;}}
+    if(!okDer)continue;
+    let ok=true; for(const c of constraints){try{if(!evalExpr(c,{...P,...D})){ok=false;break;}}catch{ok=false;break;}} if(!ok)continue;
+    let ans = safeEvalOrLiteral(answer,{...P,...D});
+    const opts=[]; for(const d of distractors){const v=safeEvalOrLiteral(d,{...P,...D,ans}); if(String(v)!==String(ans)) opts.push(v);}
+    return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
+  }
+  throw new Error("Constraint not satisfiable.");
+}
+
+/* Load a small set to demo; you can replace with your module builder */
+const FILES={
   HOA:"data/MASTER_HOA_SAT.json",
   PAM:"data/MASTER_PAM_SAT.json",
   PSDA:"data/MASTER_PSDA_SAT.json",
   GEOT:"data/MASTER_GEOT_SAT.json"
 };
 
-/* -------- Elements -------- */
-const el = {
-  timer:document.getElementById('timer'),
-  prog:document.getElementById('progFill'),
-  modNo:document.getElementById('modNo'),
-  routeLabel:document.getElementById('routeLabel'),
-  qIndex:document.getElementById('qIndex'),
-  qTotal:document.getElementById('qTotal'),
-  stem:document.getElementById('stem'),
-  choices:document.getElementById('choices'),
-  mark:document.getElementById('mark'),
-  back:document.getElementById('btnBack'),
-  next:document.getElementById('btnNext'),
-  // floating windows
-  calcBtn:document.getElementById('btnCalc'),
-  refBtn:document.getElementById('btnRef'),
-  calcWin:document.getElementById('calcWin'),
-  refWin:document.getElementById('refWin')
-};
-
-/* -------- RNG & helpers -------- */
-function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
-function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
-function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
-function seededShuffle(arr, seed){const r=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function renderMath(container){
-  if(window.renderMathInElement){
-    window.renderMathInElement(container,{delimiters:[{left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false},{left:"$",right:"$",display:false}],throwOnError:false});
-  }
-}
-
-/* generator (with rounding to 3dp) */
-function renderStemText(stem,vars){return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=> (k in vars? String(vars[k]) : `{{${k}}}`));}
-function evalExpr(expr, scope){
-  const keys=["Math","Number",...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
-  if(typeof expr!=="string") return expr;
-  if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: "+expr);
-  return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
-}
-function safeEvalOrLiteral(expr, scope){
-  if(typeof expr!=="string") return expr;
-  const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
-  try{ if(hasOp) return evalExpr(expr,scope); if(expr in scope) return scope[expr]; return expr; }catch{ return expr; }
-}
-function pick(spec,rnd){
-  if(!spec) throw new Error("Bad param spec");
-  if(Array.isArray(spec.values)){const a=spec.values;return a[Math.floor(rnd()*a.length)];}
-  const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);
-  for(let i=0;i<400;i++){const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min)); if(!exclude.has(v)) return v;}
-  throw new Error("Could not sample param");
-}
-function fmtNumber(x){ if(typeof x!=='number') return x; return Number(x.toFixed(3)); }
-function generateItem(tpl, seed="demo"){
-  const rnd=makeRng(seed);
-  const {stem, params={}, derived={}, constraints=[], answer, distractors=[]}=tpl;
-  const MAX=250;
-  for(let a=0;a<MAX;a++){
-    const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
-    const D={}; let okDer=true; for(const[k,e] of Object.entries(derived)){ try{D[k]=evalExpr(e,{...P,...D});}catch{okDer=false;break;} }
-    if(!okDer) continue;
-    let ok=true; for(const c of constraints){ try{ if(!evalExpr(c,{...P,...D})) {ok=false; break;} }catch{ ok=false; break; } }
-    if(!ok) continue;
-    let ans=safeEvalOrLiteral(answer,{...P,...D}); if(typeof ans==='number') ans=fmtNumber(ans);
-    const opts=[];
-    for(const d of distractors){
-      let v=safeEvalOrLiteral(d,{...P,...D,ans}); if(typeof v==='number') v=fmtNumber(v);
-      if(String(v)!==String(ans)) opts.push(v);
-    }
-    if(typeof ans==='number' && opts.length<3){
-      const used=new Set([String(ans),...opts.map(String)]);
-      const mag=Math.max(1e-6,Math.pow(10,Math.floor(Math.log10(Math.abs(ans)||1))-1));
-      const cands=[ans+mag,ans-mag,Math.floor(ans),Math.ceil(ans),ans*1.1,ans*0.9];
-      for(const c of cands){ const v=fmtNumber(c); if(!used.has(String(v))){opts.push(v);used.add(String(v)); if(opts.length>=3)break;} }
-      while(opts.length<3){
-        const delta=(0.5+rnd())*mag*(rnd()<0.5?-1:1), v=fmtNumber(ans+delta);
-        if(!used.has(String(v))){opts.push(v);used.add(String(v));}
-      }
-    }
-    return { stem:renderStemText(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
-  }
-  throw new Error("Constraint not satisfiable");
-}
-
-/* data */
 async function loadAll(){
-  const names=Object.keys(FILES); const all=[];
-  for(const n of names){ const r=await fetch(FILES[n],{cache:'no-store'}); if(!r.ok) throw new Error('Load failed: '+n); all.push(await r.json()); }
+  const all = await Promise.all(Object.values(FILES).map(u => fetch(u,{cache:"no-store"}).then(r=>r.json())));
   return all.flat();
 }
-function takeByDifficulty(pool, mix, seed){
-  const G={E:[],M:[],H:[]}; for(const it of pool){ const d=(it.difficulty||'M').toUpperCase(); if(G[d]) G[d].push(it); }
-  return [
-    ...seededShuffle(G.E,seed+":E").slice(0,mix.E||0),
-    ...seededShuffle(G.M,seed+":M").slice(0,mix.M||0),
-    ...seededShuffle(G.H,seed+":H").slice(0,mix.H||0)
-  ];
-}
 
-/* state */
-const state={ moduleNo:1, itemsM1:[], itemsM2:[], answers:{}, review:{}, cursor:0, timer:MODULE_TIME_SECONDS, route:'m1', seed:(new Date().toISOString().slice(0,10)) };
-
-/* render */
-function renderProgress(){
-  const items=(state.moduleNo===1?state.itemsM1:state.itemsM2), total=items.length||22;
-  const answered=Object.keys(state.answers).filter(k=>k.startsWith(state.moduleNo+"-") && state.answers[k]!=null && state.answers[k]!=='' ).length;
-  el.prog.style.width = Math.round(100*answered/total) + "%";
-}
-function renderQuestion(){
-  const items=(state.moduleNo===1?state.itemsM1:state.itemsM2), item=items[state.cursor];
-  el.qIndex.textContent=state.cursor+1; el.qTotal.textContent=items.length; el.modNo.textContent=state.moduleNo;
-  el.routeLabel.textContent = state.moduleNo===1? 'Module 1' : (state.route==='m2h'?'Module 2 (hard)':'Module 2 (easy)');
-  el.stem.innerHTML=item.stem; renderMath(el.stem);
-  el.choices.innerHTML='';
-
-  const opts=seededShuffle([item.answer,...item.distractors], state.seed+":"+state.moduleNo+":"+(state.cursor+1)+":opts");
-  if(opts.length===0){
-    const wrap=document.createElement('div'); wrap.className='free'; wrap.innerHTML=`<label>Answer:</label><input id="freeInp" type="text" inputmode="decimal" autocomplete="off">`;
-    el.choices.appendChild(wrap);
-    const key=`${state.moduleNo}-${state.cursor}`, saved=state.answers[key]??''; document.getElementById('freeInp').value=saved;
-    document.getElementById('freeInp').addEventListener('input',e=>{state.answers[key]=e.target.value.trim();renderProgress();});
-  }else{
-    opts.forEach((o,i)=>{
-      const id=`opt${i}`;
-      const div=document.createElement('label'); div.className='choice';
-      div.innerHTML=`<input type="radio" name="opt" id="${id}" value="${o}"><div>${o}</div>`;
-      el.choices.appendChild(div);
+function renderMath(){
+  if (window.renderMathInElement) {
+    window.renderMathInElement(document.body, {
+      delimiters:[
+        {left:"$$",right:"$$",display:true},
+        {left:"\\[",right:"\\]",display:true},
+        {left:"\\(",right:"\\)",display:false},
+        {left:"$", right:"$", display:false},
+      ],
+      throwOnError:false
     });
-    const key=`${state.moduleNo}-${state.cursor}`, saved=state.answers[key];
-    if(saved!=null){ [...el.choices.querySelectorAll('input[type=radio]')].forEach(r=>{ if(String(r.value)===String(saved)) r.checked=true; }); }
-    el.choices.addEventListener('change',e=>{
-      if(e.target && e.target.name==='opt'){ state.answers[`${state.moduleNo}-${state.cursor}`]=e.target.value; renderProgress(); }
-    },{once:true});
+  }
+}
+
+let items=[], gen=[], idx=0, answers = new Map();
+
+function show(i){
+  const card = document.getElementById('qCard');
+  const st   = document.getElementById('statusCard');
+  st.style.display='none'; card.style.display='block';
+
+  idx = Math.max(0, Math.min(gen.length-1, i));
+  const it = gen[idx];
+
+  document.getElementById('qNum').textContent = (idx+1);
+  document.getElementById('qLoc').textContent = `Question ${idx+1} of ${gen.length}`;
+  document.getElementById('stem').innerHTML = it.stem;
+
+  const mc = document.getElementById('mcWrap');
+  const cr = document.getElementById('crWrap');
+  mc.innerHTML = '';
+
+  if (it.distractors && it.distractors.length){
+    // multiple choice
+    mc.style.display='grid'; cr.style.display='none';
+    const opts = seededShuffle([it.answer, ...it.distractors], 'opts:'+idx).map(v=>String(v));
+    const saved = answers.get(idx);
+    opts.forEach(o=>{
+      const div = document.createElement('div');
+      div.className = 'choice' + (saved===o ? ' selected' : '');
+      div.textContent = o;
+      div.addEventListener('click', ()=>{
+        answers.set(idx, o);
+        mc.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
+        div.classList.add('selected');
+      });
+      mc.appendChild(div);
+    });
+  } else {
+    // constructed response
+    mc.style.display='none'; cr.style.display='flex';
+    const input = document.getElementById('crInput');
+    input.value = answers.get(idx) ?? '';
+    input.oninput = ()=> answers.set(idx, input.value);
   }
 
-  const mk=state.review[`${state.moduleNo}-${state.cursor}`]||false; document.getElementById('mark').checked=mk;
-  document.getElementById('mark').oninput=()=>{ state.review[`${state.moduleNo}-${state.cursor}`]=document.getElementById('mark').checked; };
-}
-function renderTimer(){ const t=Math.max(0,state.timer), m=Math.floor(t/60), s=t%60; el.timer.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-
-/* nav */
-el.back.onclick=()=>{ if(state.cursor>0){ state.cursor--; renderQuestion(); } };
-el.next.onclick=()=>{
-  const items=(state.moduleNo===1?state.itemsM1:state.itemsM2);
-  if(state.cursor<items.length-1){ state.cursor++; renderQuestion(); }
-  else{
-    if(state.moduleNo===1){
-      const correct=gradeModule(1).raw; state.route=(correct>=ROUTE_THRESHOLD)?'m2h':'m2e'; startModule2();
-    }else{
-      const g1=gradeModule(1), g2=gradeModule(2), total=g1.raw+g2.raw;
-      alert(`Module 1: ${g1.raw}/${state.itemsM1.length}\nModule 2: ${g2.raw}/${state.itemsM2.length}\n\nTotal correct: ${total}/44`);
-    }
-  }
-};
-
-/* grade */
-function gradeModule(n){
-  const items=(n===1?state.itemsM1:state.itemsM2); let raw=0;
-  items.forEach((it,i)=>{ const a=state.answers[`${n}-${i}`]; if(a!=null && a!==''){ if(String(a)===String(it.answer)) raw++; } });
-  return {raw};
+  document.getElementById('navStatus').textContent = `${idx+1}/${gen.length}`;
+  renderMath();
 }
 
-/* modules */
-let tickHandle=null;
-function startTimer(){
-  if(tickHandle) clearInterval(tickHandle);
-  state.timer=MODULE_TIME_SECONDS; renderTimer();
-  tickHandle=setInterval(()=>{ state.timer--; renderTimer(); if(state.timer<=0){ clearInterval(tickHandle); if(state.moduleNo===1){ const c=gradeModule(1).raw; state.route=(c>=ROUTE_THRESHOLD)?'m2h':'m2e'; startModule2(); } else { const g1=gradeModule(1), g2=gradeModule(2); alert(`Time!\n\nModule 1: ${g1.raw}/${state.itemsM1.length}\nModule 2: ${g2.raw}/${state.itemsM2.length}\n\nTotal: ${g1.raw+g2.raw}/44`); } } },1000);
-}
-function genVariant(item,seed){ const g=generateItem(item.template,seed); return { id:item.id, stem:g.stem, answer:g.answer, distractors:g.distractors, difficulty:item.difficulty||'M' }; }
-async function startModule1(){
-  state.moduleNo=1; state.cursor=0;
-  const all=await loadAll(), pool=seededShuffle(all,state.seed+":m1pool");
-  state.itemsM1 = takeByDifficulty(pool, MIX.m1, state.seed+":m1").map((it,i)=>genVariant(it,"m1:"+it.id));
-  el.qTotal.textContent=state.itemsM1.length; renderQuestion(); renderProgress(); startTimer();
-}
-function startModule2(){
-  if(tickHandle) clearInterval(tickHandle);
-  state.moduleNo=2; state.cursor=0; el.modNo.textContent=2; el.routeLabel.textContent=(state.route==='m2h'?'Module 2 (hard)':'Module 2 (easy)');
-  loadAll().then(all=>{
-    const mix=(state.route==='m2h'?MIX.m2_hard:MIX.m2_easy), pool=seededShuffle(all,state.seed+":m2pool");
-    state.itemsM2 = takeByDifficulty(pool, mix, state.seed+":m2").map((it,i)=>genVariant(it,"m2:"+it.id));
-    el.qTotal.textContent=state.itemsM2.length; renderQuestion(); renderProgress(); startTimer();
-  });
-}
+document.getElementById('prevBtn').addEventListener('click', ()=> show(idx-1));
+document.getElementById('nextBtn').addEventListener('click', ()=> show(idx+1));
 
-/* -------- Floating window helpers (draggable) -------- */
-function makeDraggable(win){
-  const handle = win.querySelector('[data-handle]');
-  let sx=0, sy=0, sl=0, st=0, dragging=false, zTop=60;
-  handle.addEventListener('pointerdown', (e)=>{
-    dragging=true; sx=e.clientX; sy=e.clientY;
-    const rect=win.getBoundingClientRect(); sl=rect.left; st=rect.top;
-    win.setPointerCapture(e.pointerId);
-    win.style.zIndex = (++zTop).toString();
-  });
-  handle.addEventListener('pointermove', (e)=>{
-    if(!dragging) return;
-    const nx = sl + (e.clientX - sx), ny = st + (e.clientY - sy);
-    win.style.left = Math.max(4, Math.min(window.innerWidth - 80, nx)) + 'px';
-    win.style.top  = Math.max(4, Math.min(window.innerHeight - 60, ny)) + 'px';
-  });
-  handle.addEventListener('pointerup', (e)=>{ dragging=false; try{win.releasePointerCapture(e.pointerId);}catch{} });
-  // close buttons
-  win.querySelectorAll('[data-close]').forEach(btn=> btn.addEventListener('click', ()=> win.classList.remove('active')));
-  // focus on click
-  win.addEventListener('mousedown', ()=> win.style.zIndex = (parseInt(win.style.zIndex||'60')+1).toString());
-}
+/* Timer (35:00) */
+let seconds = 35*60;
+const tEl = document.getElementById('timer');
+setInterval(()=>{
+  if (seconds<=0) return;
+  seconds--;
+  const m = Math.floor(seconds/60).toString().padStart(2,'0');
+  const s = (seconds%60).toString().padStart(2,'0');
+  tEl.textContent = `${m}:${s}`;
+}, 1000);
 
-/* calculator tabs + open/close */
-(function initCalc(){
-  const win=el.calcWin; makeDraggable(win);
-  const tabs=win.querySelectorAll('.tab');
-  const g=document.getElementById('calcG'), s=document.getElementById('calcS');
-  tabs.forEach(btn=> btn.addEventListener('click', ()=>{
-    tabs.forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-    const which = btn.dataset.tab; g.style.display = (which==='g')?'block':'none'; s.style.display = (which==='s')?'block':'none';
-  }));
-  document.getElementById('btnCalc').onclick = ()=> win.classList.toggle('active');
+/* Boot */
+(async function(){
+  const all = await loadAll();
+  // Rough E/M/H sampling (7/10/5) across all domains
+  const E = all.filter(x => (x.difficulty||'M')==='E');
+  const M = all.filter(x => (x.difficulty||'M')==='M');
+  const H = all.filter(x => (x.difficulty||'M')==='H');
+
+  function take(arr,n,tag){ return seededShuffle(arr, tag).slice(0,n); }
+  items = [...take(E,7,'E'), ...take(M,10,'M'), ...take(H,5,'H')];
+  const seedBase = 'module1';
+  gen = items.map((it,i)=> generateItem(it.template, `${seedBase}:${it.id||i}`));
+  document.getElementById('status').textContent = 'Module ready.';
+  show(0);
 })();
-
-/* reference open/close */
-(function initRef(){
-  const win=el.refWin; makeDraggable(win);
-  document.getElementById('btnRef').onclick = ()=>{
-    win.classList.toggle('active');
-    // ensure KaTeX rendered (once)
-    if(win.classList.contains('active')) renderMath(document.getElementById('refWrap'));
-  };
-})();
-
-/* boot */
-document.addEventListener('keydown', e=>{ if(e.key==='ArrowRight') el.next.click(); if(e.key==='ArrowLeft') el.back.click(); });
-function boot(){ renderTimer(); startModule1(); }
-boot();
 </script>
 </body>
 </html>
