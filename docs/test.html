@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Digital SAT — Math Practice Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:,">
+
+  <style>
+    :root { --bg:#0b1020; --card:#121a2c; --text:#e8edf7; --muted:#9fb0d0; --accent:#5ea0ff; --accent2:#76e0a3; --danger:#ff6b6b;}
+    html,body { margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    a { color: var(--accent); }
+    header { padding:18px 20px; border-bottom:1px solid #20304f; display:flex; align-items:center; gap:12px; }
+    header h1 { margin:0; font-size:18px; font-weight:700; }
+    main { max-width:980px; margin:0 auto; padding:20px; }
+    .card { background:var(--card); border:1px solid #20304f; border-radius:14px; padding:18px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .spacer { flex:1; }
+    select,input,button,textarea { background:#0f1726; color:var(--text); border:1px solid #253454; border-radius:10px; padding:10px 12px; font-size:14px; }
+    button { cursor:pointer; }
+    button.primary { background:var(--accent); color:#081120; border:none;}
+    button.ghost { background:#131c31; }
+    button.danger { background:var(--danger); color:#081120; border:none;}
+    .muted { color:var(--muted); }
+    .grid { display:grid; gap:14px; }
+    .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:999px; border:1px solid #2a3a5c; background:#0f1726; color:#cfe0ff; }
+    .pill.ans { background:#24436f; border-color:#3b5aa0; }
+    .pill.flag { outline:2px solid var(--accent2); }
+    .timer { font-variant-numeric: tabular-nums; font-weight:700; }
+    .stem { font-size:16px; line-height:1.5; white-space:pre-wrap; }
+    ul.choices { list-style:none; padding-left:0; display:grid; gap:8px; margin:10px 0 0 0; }
+    .choice { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1px solid #2a3a5c; border-radius:10px; cursor:pointer; }
+    .choice input { margin-top:4px; }
+    details { margin-top:10px; }
+    .k { color:#b5c7ea; }
+    .tag { font-size:12px; padding:2px 8px; border:1px solid #2a3a5c; border-radius:999px; margin-left:6px; color:#cfe0ff; }
+    .good { color:var(--accent2); }
+    .bad { color:#ff9b9b; }
+    .grid22 { display:grid; grid-template-columns: repeat(11, 1fr); gap:6px; }
+    .grid22 button { padding:8px 0; }
+    .hidden { display:none !important; }
+  </style>
+
+  <!-- KaTeX (optional) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Digital SAT — Math Practice Test</h1>
+  <div class="spacer"></div>
+  <div id="hdrTimer" class="timer muted">—:—</div>
+</header>
+
+<main>
+  <!-- ---------- Start Screen ---------- -->
+  <section id="start" class="grid">
+    <div class="card">
+      <h2 style="margin:0 0 8px">Setup</h2>
+      <div class="muted">This runner approximates the Digital SAT Math: two 22-question modules (35 min each) with an adaptive second module.</div>
+      <div style="height:12px"></div>
+
+      <div class="controls">
+        <label>Seed <input id="seed" placeholder="e.g. test-2025-09-28" style="width:220px"></label>
+        <label>Domain mix
+          <select id="domainPreset">
+            <option value="default">Default (HOA 35%, PAM 25%, PSDA 25%, GEOT 15%)</option>
+            <option value="even">Even across domains</option>
+          </select>
+        </label>
+        <span class="muted">Difficulty mixes are built in (Module 1 balanced; Module 2 adaptive).</span>
+      </div>
+
+      <div style="height:14px"></div>
+      <button id="btnStart" class="primary">Start Module 1</button>
+    </div>
+  </section>
+
+  <!-- ---------- Module Runner ---------- -->
+  <section id="runner" class="grid hidden">
+    <div class="card">
+      <div class="row">
+        <div id="moduleTitle"><strong>Module 1</strong> · 22 questions · <span class="timer" id="moduleTimer">35:00</span></div>
+        <div class="spacer"></div>
+        <button id="btnReview" class="ghost">Review grid</button>
+        <button id="btnSubmit" class="danger">Submit module</button>
+      </div>
+      <div style="height:8px"></div>
+
+      <div id="progress" class="row"></div>
+
+      <div style="height:10px"></div>
+      <div id="reviewGrid" class="grid22 hidden"></div>
+
+      <div style="height:12px"></div>
+      <div id="qcard" class="grid">
+        <!-- question injected -->
+      </div>
+
+      <div class="row">
+        <button id="btnPrev" class="ghost">Previous</button>
+        <button id="btnFlag" class="ghost">Mark for review</button>
+        <div class="spacer"></div>
+        <button id="btnNext" class="primary">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Intermission / Route ---------- -->
+  <section id="route" class="grid hidden">
+    <div class="card">
+      <h2 style="margin:0 0 6px">Module 1 submitted</h2>
+      <div id="routeMsg" class="muted"></div>
+      <div style="height:12px"></div>
+      <button id="btnStartM2" class="primary">Start Module 2</button>
+    </div>
+  </section>
+
+  <!-- ---------- Results ---------- -->
+  <section id="results" class="grid hidden">
+    <div class="card">
+      <h2 style="margin:0 0 6px">Results</h2>
+      <div id="scoreline"></div>
+      <div class="muted" id="breakdown"></div>
+      <div style="height:12px"></div>
+      <details>
+        <summary>Review questions</summary>
+        <div id="reviewList" class="grid" style="margin-top:10px"></div>
+      </details>
+      <div style="height:12px"></div>
+      <button id="btnRestart" class="ghost">Back to start</button>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------- show script errors in the UI ---------- */
+window.addEventListener('error', e => {
+  const t = document.getElementById('breakdown');
+  if (t) t.textContent = '⚠️ ' + (e.error?.message || e.message || 'unknown error');
+});
+
+/*** ---------- CONSTANTS (you can tune) ---------- ***/
+// Domain weights used to draw items for each module
+const DOMAIN_WEIGHTS = {
+  default: { HOA: 0.35, PAM: 0.25, PSDA: 0.25, GEOT: 0.15 },
+  even:    { HOA: 0.25, PAM: 0.25, PSDA: 0.25, GEOT: 0.25 }
+};
+
+// Module blueprints — APPROXIMATION of DSAT mixes
+const BLUEPRINT = {
+  module1: { total: 22, diffs: { E: 0.45, M: 0.40, H: 0.15 } },
+  module2_easy: { total: 22, diffs: { E: 0.60, M: 0.35, H: 0.05 } },
+  module2_hard: { total: 22, diffs: { E: 0.25, M: 0.45, H: 0.30 } },
+  timeMin: 35,
+  routeThreshold: 14 // if Module 1 correct >= 14 -> hard route; else easy
+};
+
+// Data files
+const FILES = {
+  HOA: "data/MASTER_HOA_SAT.json",
+  PAM: "data/MASTER_PAM_SAT.json",
+  PSDA: "data/MASTER_PSDA_SAT.json",
+  GEOT: "data/MASTER_GEOT_SAT.json"
+};
+
+/*** ---------- RNG (same family as viewer) ---------- ***/
+function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
+function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
+function seededShuffle(arr, seed){ const rnd = makeRng(seed); const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/*** ---------- Fraction & rounding (matches viewer) ---------- ***/
+const GLOBAL_FORMAT = { preferFraction:true, maxDecimals:3, fractionMaxDen:200, fractionTol:1e-9 };
+function isNumber(x){ return typeof x === "number" && Number.isFinite(x); }
+function toFraction(x, maxDen=200, tol=1e-9){
+  const sign = x < 0 ? -1 : 1; x = Math.abs(x); if (!isFinite(x)) return null;
+  let h1=1,h0=0,k1=0,k0=1,b=x,a=Math.floor(b),h=a*h1+h0,k=a*k1+k0,prevErr=Math.abs(x-h/k);
+  while(k<=maxDen){ if(Math.abs(x-h/k)<=tol) break; b=1/(b-a); a=Math.floor(b); const h2=a*h+h1,k2=a*k+k1; h1=h;k1=k;h=h2;k=k2; const err=Math.abs(x-h/k); if(err>prevErr)break; prevErr=err; }
+  return { n: sign*h, d: k, err: Math.abs(sign*h/k - sign*x) };
+}
+function terminatesWithin(x, maxPlaces){
+  const eps=1e-10; let t=x; for(let k=0;k<=maxPlaces;k++){ if(Math.abs(t-Math.round(t))<eps) return true; t*=10; } return false;
+}
+function formatDisplay(x, tmplFmt=null){
+  if (!isNumber(x)) return x;
+  if (tmplFmt){ if (tmplFmt.fixed!=null) return Number(x.toFixed(+tmplFmt.fixed)); if (tmplFmt.round!=null){const p=Math.pow(10,+tmplFmt.round);return Math.round(x*p)/p;} }
+  const { preferFraction, maxDecimals, fractionMaxDen, fractionTol } = GLOBAL_FORMAT;
+  if (terminatesWithin(x, maxDecimals)) return Number(x.toFixed(maxDecimals));
+  if (preferFraction){ const f=toFraction(x, fractionMaxDen, fractionTol); if (f && f.d>1 && f.err<=fractionTol){ const g=(a,b)=>b?g(b,a%b):Math.abs(a); const gg=g(Math.abs(f.n),f.d); return `${(f.n/gg)}\/${(f.d/gg)}`; } }
+  return Number(x.toFixed(maxDecimals));
+}
+
+/*** ---------- Generator helpers (matches viewer) ---------- ***/
+function pick(spec,rnd){
+  if(!spec)throw new Error("Bad param spec");
+  if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
+  const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);
+  for(let i=0;i<400;i++){ const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min)); if(!exclude.has(v))return v; }
+  throw new Error("Could not sample param (too restrictive).");
+}
+function renderStem(stem,vars){
+  return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));
+}
+function evalExpr(expr,scope){
+  const keys=["Math","Number",...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
+  if(typeof expr!=="string")return expr;
+  if (/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: "+expr);
+  return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
+}
+function safeEvalOrLiteral(expr,scope){
+  if(typeof expr!=="string")return expr;
+  const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
+  try{ if(hasOp) return evalExpr(expr,scope); if(expr in scope) return scope[expr]; return expr; }
+  catch{ return expr; }
+}
+function generateItem(template, seed = "demo") {
+  const rnd = makeRng(seed);
+  const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
+  const tmplFmt = template.format || template.display || null;
+  const MAX_TRIES = 250;
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const P = {}; for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
+    const D = {}; let okDer = true;
+    for (const [k, expr] of Object.entries(derived)) { try { D[k] = evalExpr(expr, { ...P, ...D }); } catch { okDer = false; break; } }
+    if (!okDer) continue;
+    let ok = true; for (const c of constraints) { try { if (!evalExpr(c, { ...P, ...D })) { ok = false; break; } } catch { ok=false; break; } }
+    if (!ok) continue;
+
+    const ansRaw = safeEvalOrLiteral(answer, { ...P, ...D });
+    const optsRaw = [];
+    for (const d of distractors) {
+      const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansRaw });
+      if (String(v) !== String(ansRaw)) optsRaw.push(v);
+    }
+    const ansDisp = formatDisplay(ansRaw, tmplFmt);
+    const optsDisp = []; const used = new Set([String(ansDisp)]);
+    for (const v of optsRaw){ const f = formatDisplay(v, tmplFmt); if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); } }
+
+    // auto-pad to 4 options when numeric
+    if (isNumber(ansRaw) && optsDisp.length < 3) {
+      const padRng = makeRng(seed + ":auto");
+      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ansRaw) || 1)) - 1));
+      const candidates = [ ansRaw + mag, ansRaw - mag, Math.floor(ansRaw), Math.ceil(ansRaw), ansRaw * 1.1, ansRaw * 0.9 ];
+      for (const c of candidates) {
+        const f = formatDisplay(c, tmplFmt);
+        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); if (optsDisp.length >= 3) break; }
+      }
+      while (optsDisp.length < 3) {
+        const delta = (0.5 + padRng()) * mag * (padRng() < 0.5 ? -1 : 1);
+        const f = formatDisplay(ansRaw + delta, tmplFmt);
+        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); }
+      }
+    }
+
+    return { stem: renderStem(stem, { ...P, ...D }), answer: ansDisp, distractors: optsDisp.slice(0, 3) };
+  }
+  throw new Error("Constraint not satisfiable after multiple attempts");
+}
+
+/*** ---------- Data load ---------- ***/
+async function loadAllBanks(){
+  const names = Object.keys(FILES);
+  const all = [];
+  for (const n of names) {
+    const resp = await fetch(FILES[n], { cache: "no-store" });
+    if (!resp.ok) throw new Error(`Failed loading ${n}: ${resp.status}`);
+    const data = await resp.json();
+    all.push(...data);
+  }
+  return all; // array of items with {id, domain, difficulty, template}
+}
+
+/*** ---------- Blueprint utils ---------- ***/
+function countsFromWeights(total, weights){
+  // proportional allocation with remainder fix
+  const keys = Object.keys(weights);
+  const raw = keys.map(k => ({k, v: total*weights[k]}));
+  const base = {}; let sum = 0;
+  for (const r of raw){ base[r.k] = Math.floor(r.v); sum += base[r.k]; }
+  let rem = total - sum;
+  // give leftover to largest fractional parts
+  raw.sort((a,b)=> (b.v - Math.floor(b.v)) - (a.v - Math.floor(a.v)));
+  let i=0; while(rem>0){ base[raw[i%raw.length].k]++; rem--; i++; }
+  return base;
+}
+
+/*** ---------- Item selection ---------- ***/
+function selectItems(pool, total, domainWeights, diffWeights, seed, used){
+  // Filter by domains/difficulties then allocate counts grid
+  const domains = Object.keys(domainWeights);
+  const diffs = Object.keys(diffWeights);
+  const byDom = {}; for (const d of domains) byDom[d] = pool.filter(x => x.domain === d);
+  const perDomain = countsFromWeights(total, domainWeights);
+  const selection = [];
+  let pickSeedBump = 0;
+
+  for (const d of domains){
+    const domainTotal = perDomain[d];
+    const perDiff = countsFromWeights(domainTotal, diffWeights);
+    for (const diff of diffs){
+      const candidates = byDom[d].filter(x => (x.difficulty||'M') === diff && !used.has(x.id));
+      // deterministic shuffle/pick
+      const shuf = seededShuffle(candidates, seed + ":sel:" + d + ":" + diff + ":" + (pickSeedBump++));
+      for (let i=0; i<perDiff[diff] && i<shuf.length; i++){
+        selection.push(shuf[i]);
+        used.add(shuf[i].id);
+      }
+    }
+  }
+
+  // If short (not enough candidates), backfill with any unused
+  if (selection.length < total){
+    const any = pool.filter(x => !used.has(x.id));
+    const shuf = seededShuffle(any, seed + ":fill");
+    for (const it of shuf){
+      selection.push(it); used.add(it.id);
+      if (selection.length >= total) break;
+    }
+  }
+
+  return selection.slice(0, total);
+}
+
+/*** ---------- Simple scoring ---------- ***/
+function scoreModule(items, responses){
+  let correct = 0;
+  items.forEach((it, idx) => { if (responses[idx] != null && responses[idx] === String(it.__answer)) correct++; });
+  return correct;
+}
+
+/*** ---------- UI state ---------- ***/
+const els = {
+  start: document.getElementById('start'),
+  runner: document.getElementById('runner'),
+  route: document.getElementById('route'),
+  results: document.getElementById('results'),
+
+  moduleTimer: document.getElementById('moduleTimer'),
+  hdrTimer: document.getElementById('hdrTimer'),
+  moduleTitle: document.getElementById('moduleTitle'),
+  progress: document.getElementById('progress'),
+  reviewGrid: document.getElementById('reviewGrid'),
+  qcard: document.getElementById('qcard'),
+
+  btnStart: document.getElementById('btnStart'),
+  btnSubmit: document.getElementById('btnSubmit'),
+  btnReview: document.getElementById('btnReview'),
+  btnPrev: document.getElementById('btnPrev'),
+  btnNext: document.getElementById('btnNext'),
+  btnFlag: document.getElementById('btnFlag'),
+  btnStartM2: document.getElementById('btnStartM2'),
+  btnRestart: document.getElementById('btnRestart'),
+
+  seed: document.getElementById('seed'),
+  domainPreset: document.getElementById('domainPreset'),
+
+  routeMsg: document.getElementById('routeMsg'),
+  scoreline: document.getElementById('scoreline'),
+  breakdown: document.getElementById('breakdown'),
+  reviewList: document.getElementById('reviewList')
+};
+
+let BANK = [];
+let STATE = {
+  seed: '',
+  preset: 'default',
+  usedIds: new Set(),
+
+  modIndex: 1,
+  items: [],
+  responses: [],
+  flags: [],
+  cursor: 0,
+  timerId: null,
+  secondsLeft: 0,
+
+  // For results
+  m1: { items: [], responses: [], correct: 0 },
+  m2: { items: [], responses: [], correct: 0, route: 'easy' }
+};
+
+function setVisible(section){
+  els.start.classList.add('hidden');
+  els.runner.classList.add('hidden');
+  els.route.classList.add('hidden');
+  els.results.classList.add('hidden');
+  section.classList.remove('hidden');
+}
+
+function fmtTime(s){
+  const m = Math.floor(s/60), r = s%60;
+  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
+
+/*** ---------- Render Question ---------- ***/
+function renderQuestion(){
+  const i = STATE.cursor;
+  const item = STATE.items[i];
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  // stem
+  const stem = document.createElement('div');
+  stem.className = 'stem';
+  stem.innerHTML = item.__stem;
+  card.appendChild(stem);
+
+  // choices
+  const ul = document.createElement('ul');
+  ul.className = 'choices';
+  const opts = seededShuffle([item.__answer, ...item.__distractors], STATE.seed + ":opts:" + item.id);
+  opts.forEach((o, j) => {
+    const li = document.createElement('li');
+    li.className = 'choice';
+    const id = `q${i}_opt${j}`;
+    li.innerHTML = `<input type="radio" name="q${i}" id="${id}" value="${o}">
+                    <label for="${id}"><span class="k">${String.fromCharCode(65+j)}.</span> ${o}</label>`;
+    ul.appendChild(li);
+  });
+  card.appendChild(ul);
+
+  // preselect if answered
+  const prev = STATE.responses[i];
+  if (prev != null){
+    const radios = ul.querySelectorAll('input[type=radio]');
+    for (const r of radios){ if (r.value === prev) { r.checked = true; break; } }
+  }
+
+  // handle change
+  ul.addEventListener('change', e => {
+    if (e.target && e.target.name === `q${i}`) {
+      STATE.responses[i] = e.target.value;
+      refreshProgress();
+    }
+  });
+
+  // render
+  els.qcard.innerHTML = '';
+  els.qcard.appendChild(card);
+  renderMathInElement?.(card, { delimiters:[
+    {left:"$$",right:"$$",display:true},
+    {left:"\\[",right:"\\]",display:true},
+    {left:"\\(",right:"\\)",display:false},
+    {left:"$",right:"$",display:false}
+  ], throwOnError:false });
+}
+
+/*** ---------- Progress + Review grid ---------- ***/
+function refreshProgress(){
+  els.progress.innerHTML = '';
+  for (let i=0;i<STATE.items.length;i++){
+    const p = document.createElement('div');
+    p.className = 'pill' + (STATE.responses[i]!=null?' ans':'') + (STATE.flags[i]?' flag':'');
+    p.textContent = i+1;
+    p.addEventListener('click', () => { STATE.cursor = i; renderQuestion(); });
+    els.progress.appendChild(p);
+  }
+
+  // review grid
+  els.reviewGrid.innerHTML = '';
+  for (let i=0;i<STATE.items.length;i++){
+    const b = document.createElement('button');
+    b.className = 'pill' + (STATE.responses[i]!=null?' ans':'') + (STATE.flags[i]?' flag':'');
+    b.textContent = i+1;
+    b.addEventListener('click', () => {
+      STATE.cursor = i;
+      renderQuestion();
+      els.reviewGrid.classList.add('hidden');
+    });
+    els.reviewGrid.appendChild(b);
+  }
+}
+
+/*** ---------- Module flow ---------- ***/
+function buildModule(kind){ // 'm1' | 'm2_easy' | 'm2_hard'
+  const bp = (kind==='m1') ? BLUEPRINT.module1 :
+             (kind==='m2_easy') ? BLUEPRINT.module2_easy : BLUEPRINT.module2_hard;
+  const preset = DOMAIN_WEIGHTS[STATE.preset] || DOMAIN_WEIGHTS.default;
+
+  const items = selectItems(
+    BANK,
+    bp.total,
+    preset,
+    bp.diffs,
+    STATE.seed + ":" + kind,
+    STATE.usedIds
+  );
+
+  // generate renders now (so answers fixed)
+  const rendered = items.map((it, idx) => {
+    const seed = STATE.seed + ":" + kind + ":" + it.id;
+    const gen = generateItem(it.template, seed);
+    return {
+      id: it.id,
+      domain: it.domain,
+      difficulty: it.difficulty || 'M',
+      __stem: gen.stem,
+      __answer: String(gen.answer),
+      __distractors: gen.distractors.map(String)
+    };
+  });
+
+  return rendered;
+}
+
+function startModule(n){ // 1 or 2
+  STATE.modIndex = n;
+  STATE.cursor = 0;
+  STATE.responses = new Array(n===1?BLUEPRINT.module1.total:BLUEPRINT.module2_easy.total).fill(null);
+  STATE.flags = new Array(STATE.responses.length).fill(false);
+  STATE.secondsLeft = BLUEPRINT.timeMin*60;
+  els.moduleTitle.innerHTML = `<strong>Module ${n}</strong> · ${STATE.responses.length} questions · <span class="timer" id="moduleTimer">${fmtTime(STATE.secondsLeft)}</span>`;
+  els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
+  renderQuestion();
+  refreshProgress();
+  // timer
+  clearInterval(STATE.timerId);
+  STATE.timerId = setInterval(() => {
+    STATE.secondsLeft--; els.moduleTimer.textContent = fmtTime(STATE.secondsLeft); els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
+    if (STATE.secondsLeft <= 0){ clearInterval(STATE.timerId); submitModule(); }
+  }, 1000);
+  setVisible(els.runner);
+}
+
+function submitModule(){
+  clearInterval(STATE.timerId);
+  // stash render answers into items (for scoring)
+  STATE.items.forEach((it)=>{ /* already has __answer */ });
+  const correct = scoreModule(STATE.items, STATE.responses);
+
+  if (STATE.modIndex === 1){
+    STATE.m1.items = STATE.items;
+    STATE.m1.responses = STATE.responses.slice();
+    STATE.m1.correct = correct;
+
+    const route = (correct >= BLUEPRINT.routeThreshold) ? 'hard' : 'easy';
+    STATE.m2.route = route;
+    els.routeMsg.innerHTML = `You answered <strong>${correct} / ${STATE.items.length}</strong> correctly.<br>Module 2 will use the <strong>${route.toUpperCase()}</strong> form.`;
+    setVisible(els.route);
+  } else {
+    STATE.m2.items = STATE.items;
+    STATE.m2.responses = STATE.responses.slice();
+    STATE.m2.correct = correct;
+    showResults();
+  }
+}
+
+/*** ---------- Results ---------- ***/
+function showResults(){
+  const total = STATE.m1.items.length + STATE.m2.items.length;
+  const correct = STATE.m1.correct + STATE.m2.correct;
+
+  // very rough 200–800 estimate (not official!)
+  const routeBoost = (STATE.m2.route === 'hard') ? 30 : 0; // tiny nudge for harder route
+  const scaled = Math.round(200 + ((correct/total) * 600) + routeBoost);
+  const scaledClamped = Math.max(200, Math.min(800, scaled));
+
+  els.scoreline.innerHTML = `
+    <div><strong>Total correct:</strong> ${correct} / ${total}
+      <span class="tag">Module 2: ${STATE.m2.route.toUpperCase()}</span>
+      <span class="tag">Approx. scaled: <strong>${scaledClamped}</strong> (for practice only)</span>
+    </div>`;
+
+  // breakdown
+  const add = (acc, arr, key) => { arr.forEach(x => { const k=x[key]||'—'; acc[k]=(acc[k]||0)+1; }); return acc; };
+  const domAll = add({}, STATE.m1.items.concat(STATE.m2.items), 'domain');
+  const diffAll = add({}, STATE.m1.items.concat(STATE.m2.items), 'difficulty');
+
+  let html = `<div><strong>By domain:</strong> `;
+  for (const k of Object.keys(domAll)) html += `<span class="tag">${k}: ${domAll[k]}</span> `;
+  html += `</div><div style="height:6px"></div><div><strong>By difficulty:</strong> `;
+  for (const k of Object.keys(diffAll)) html += `<span class="tag">${k}: ${diffAll[k]}</span> `;
+  html += `</div>`;
+  els.breakdown.innerHTML = html;
+
+  // detailed review
+  const renderList = (module, name) => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<h3 style="margin:0 0 8px">${name} — ${module.correct}/${module.items.length} correct</h3>`;
+    module.items.forEach((it, i) => {
+      const chosen = module.responses[i];
+      const ok = (chosen === String(it.__answer));
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <div class="row">
+          <div><span class="tag">${it.domain}</span><span class="tag">${it.difficulty}</span></div>
+          <div class="spacer"></div>
+          <div class="${ok?'good':'bad'}">${ok?'Correct':'Incorrect'}</div>
+        </div>
+        <div class="stem" style="margin-top:8px">${it.__stem}</div>
+        <div class="k" style="margin-top:8px"><strong>Answer:</strong> ${it.__answer}</div>`;
+      // we can’t easily show the full original explanation here unless you want to also store it at generation time
+      wrap.appendChild(div);
+    });
+    return wrap;
+  };
+  els.reviewList.innerHTML = '';
+  els.reviewList.appendChild(renderList(STATE.m1, 'Module 1'));
+  els.reviewList.appendChild(renderList(STATE.m2, 'Module 2'));
+
+  setVisible(els.results);
+}
+
+/*** ---------- Handlers ---------- ***/
+els.btnStart.addEventListener('click', async () => {
+  els.btnStart.disabled = true;
+  if (!BANK.length) BANK = await loadAllBanks();
+
+  STATE.seed = els.seed.value || new Date().toISOString().slice(0,10);
+  STATE.preset = els.domainPreset.value || 'default';
+  STATE.usedIds = new Set();
+
+  // Build Module 1
+  STATE.items = buildModule('m1');
+  startModule(1);
+  els.btnStart.disabled = false;
+});
+
+els.btnSubmit.addEventListener('click', () => submitModule());
+els.btnReview.addEventListener('click', () => els.reviewGrid.classList.toggle('hidden'));
+els.btnPrev.addEventListener('click', () => { if (STATE.cursor>0){ STATE.cursor--; renderQuestion(); }});
+els.btnNext.addEventListener('click', () => { if (STATE.cursor<STATE.items.length-1){ STATE.cursor++; renderQuestion(); }});
+els.btnFlag.addEventListener('click', () => { STATE.flags[STATE.cursor] = !STATE.flags[STATE.cursor]; refreshProgress(); });
+
+els.btnStartM2.addEventListener('click', () => {
+  // Build module 2 based on route
+  const kind = (STATE.m2.route==='hard') ? 'm2_hard' : 'm2_easy';
+  STATE.items = buildModule(kind);
+  startModule(2);
+});
+
+els.btnRestart.addEventListener('click', () => {
+  setVisible(els.start);
+});
+
+/*** ---------- Boot ---------- ***/
+setVisible(els.start);
+</script>
+</body>
+</html>
