@@ -6,31 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
 
-  <!-- KaTeX for any math in the UI -->
+  <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 
-  <!-- Desmos official API (demo key from Desmos docs) -->
+  <!-- Desmos API -->
   <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 
   <style>
     :root{
-      --blue-900:#163d86;  /* header */
-      --blue-800:#1f4fa7;
-      --blue-700:#2a66cf;  /* buttons/accent */
-      --blue-100:#e8f1ff;
-      --text:#0f172a;
-      --muted:#486080;
-      --card:#ffffff;
-      --bg:#f6f8fc;
-      --border:#d8e1f1;
-      --shadow:0 2px 10px rgba(15, 23, 42, .08);
+      --blue-900:#163d86; --blue-800:#1f4fa7; --blue-700:#2a66cf; --blue-100:#e8f1ff;
+      --text:#0f172a; --muted:#486080; --card:#fff; --bg:#f6f8fc; --border:#d8e1f1; --shadow:0 2px 10px rgba(15,23,42,.08);
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 
-    /* Top bar */
     .top{position:sticky;top:0;z-index:50;background:var(--blue-900);color:#fff;box-shadow:var(--shadow)}
     .top .row{display:flex;align-items:center;gap:16px;padding:10px 16px}
     .brand{font-weight:700;letter-spacing:.2px}
@@ -41,7 +32,6 @@
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .timer{min-width:78px;text-align:center;font-variant-numeric:tabular-nums}
 
-    /* Main layout */
     .wrap{max-width:980px;margin:18px auto;padding:0 16px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
     .qhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -56,7 +46,6 @@
     .nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:10px}
     .muted{color:var(--muted)}
 
-    /* Floating tool windows */
     .tool-window{
       position:fixed;left:40px;top:90px;width:520px;background:#fff;border:1px solid var(--border);
       border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.18);display:none;flex-direction:column;z-index:60;
@@ -77,18 +66,18 @@
     .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer}
     .tab.active{background:var(--blue-100);border-color:var(--blue-700);color:var(--blue-900);font-weight:600}
 
-    /* Desmos containers */
-    .calc-holder{height:460px;padding:0 10px 10px}
+    /* WIDER calc + taller area */
+    #calcWin{width:820px;}
+    @media (max-width:900px){ #calcWin{width:94vw;} }
+    .calc-holder{height:520px;padding:0 10px 10px}
     .calc-canvas{width:100%;height:100%;border:0;border-radius:0 0 12px 12px}
 
-    /* Reference sheet image */
     .ref-wrap{padding:12px}
     .ref-img{width:100%;height:auto;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
   </style>
 </head>
 <body>
 
-  <!-- Top bar -->
   <div class="top">
     <div class="row">
       <div class="brand">Section 1 — Math</div>
@@ -99,7 +88,6 @@
     </div>
   </div>
 
-  <!-- Main -->
   <main class="wrap">
     <div class="card" id="statusCard"><div class="muted" id="status">Loading module…</div></div>
 
@@ -125,7 +113,7 @@
     </div>
   </main>
 
-  <!-- CALCULATOR WINDOW (Desmos API) -->
+  <!-- Calculator window -->
   <div id="calcWin" class="tool-window" style="left:40px;top:110px;">
     <div class="titlebar" data-handle>
       <h3>Calculator</h3>
@@ -146,7 +134,7 @@
     </div>
   </div>
 
-  <!-- REFERENCE WINDOW (exact sheet as image) -->
+  <!-- Reference window -->
   <div id="refWin" class="tool-window" style="width:760px;left:120px;top:160px;">
     <div class="titlebar" data-handle>
       <h3>Reference Sheet</h3>
@@ -154,29 +142,27 @@
     </div>
     <div class="content">
       <div class="ref-wrap">
-        <!-- Put your image at docs/data/reference.png -->
-        <img class="ref-img" src="data/reference.png" alt="SAT Math Reference Sheet">
+        <!-- We'll set src via JS with fallbacks -->
+        <img id="refImg" class="ref-img" alt="SAT Math Reference Sheet">
       </div>
     </div>
   </div>
 
 <script>
-/* =============== error surface =============== */
+/* Error surface */
 window.addEventListener('error', e => {
   const s = document.getElementById('status');
   if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
 });
 
-/* =============== draggable windows (titlebar only) =============== */
+/* Draggable windows (titlebar only) */
 function makeDraggable(win){
   const handle = win.querySelector('[data-handle]');
-  let startX=0, startY=0, startL=0, startT=0, dragging=false, moved=false, zTop=60;
-  const THRESH = 3;
-
-  function onMouseDown(e){
-    if (e.button !== 0) return;
+  let startX=0,startY=0,startL=0,startT=0,dragging=false,moved=false,zTop=60;
+  const THRESH=3;
+  function onDown(e){ if(e.button!==0) return;
     dragging=true; moved=false;
-    const r = win.getBoundingClientRect();
+    const r=win.getBoundingClientRect();
     startX=e.clientX; startY=e.clientY; startL=r.left; startT=r.top;
     win.style.zIndex=(++zTop).toString();
     document.addEventListener('mousemove', onMove);
@@ -197,56 +183,76 @@ function makeDraggable(win){
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
   }
-  handle.addEventListener('mousedown', onMouseDown);
+  handle.addEventListener('mousedown', onDown);
   win.addEventListener('mousedown', ()=> win.style.zIndex=(++zTop).toString());
   win.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', ()=> win.classList.remove('active')));
 }
 makeDraggable(document.getElementById('calcWin'));
 makeDraggable(document.getElementById('refWin'));
 
-/* =============== open/close + Desmos init =============== */
-const calcWin = document.getElementById('calcWin');
-const refWin  = document.getElementById('refWin');
-document.getElementById('btnCalc').addEventListener('click', ()=> {
+/* Open/close + Desmos init */
+const calcWin=document.getElementById('calcWin');
+const refWin=document.getElementById('refWin');
+document.getElementById('btnCalc').addEventListener('click', ()=>{
   calcWin.classList.toggle('active');
-  if (calcWin.classList.contains('active')) ensureDesmos();
+  if (calcWin.classList.contains('active')){
+    ensureDesmos();
+    requestAnimationFrame(()=>{ try{ graphCalc?.resize(); }catch{} });
+  }
 });
-document.getElementById('btnRef').addEventListener('click',  ()=> refWin.classList.toggle('active'));
+document.getElementById('btnRef').addEventListener('click', ()=> refWin.classList.toggle('active'));
 
-/* Desmos instances (one-time lazy init) */
-let graphCalc = null, sciCalc = null;
+/* Desmos instances */
+let graphCalc=null, sciCalc=null;
 function ensureDesmos(){
-  if (!graphCalc){
-    const el = document.getElementById('graphCalc');
-    graphCalc = Desmos.GraphingCalculator(el, {
-      expressions: true,
-      expressionsTopbar: true,
-      keypad: true,
-      zoomButtons: true,
-      settingsMenu: false,
-      invertedColors: false,
+  if(!graphCalc){
+    graphCalc = Desmos.GraphingCalculator(document.getElementById('graphCalc'),{
+      expressions:true, expressionsTopbar:true, keypad:true, zoomButtons:true, settingsMenu:false
     });
   }
-  if (!sciCalc){
-    const el2 = document.getElementById('sciCalc');
-    sciCalc = Desmos.ScientificCalculator(el2, { keypad: true });
+  if(!sciCalc){
+    sciCalc = Desmos.ScientificCalculator(document.getElementById('sciCalc'),{ keypad:true });
   }
 }
 
-/* calc tabs */
-(function wireCalcTabs(){
-  const tabs = calcWin.querySelectorAll('.tab');
-  tabs.forEach(t => t.addEventListener('click', ()=>{
-    tabs.forEach(x => x.classList.remove('active'));
+/* Calc tabs */
+(function(){
+  const tabs=calcWin.querySelectorAll('.tab');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    const isGraph = t.dataset.tab === 'graph';
-    document.getElementById('graphCalc').style.display = isGraph ? 'block' : 'none';
-    document.getElementById('sciCalc').style.display   = isGraph ? 'none'  : 'block';
+    const isGraph=(t.dataset.tab==='graph');
+    document.getElementById('graphCalc').style.display=isGraph?'block':'none';
+    document.getElementById('sciCalc').style.display=isGraph?'none':'block';
     ensureDesmos();
+    if(isGraph) requestAnimationFrame(()=>{ try{ graphCalc?.resize(); }catch{} });
   }));
 })();
 
-/* =============== mini demo engine (same as before) =============== */
+/* Reference image with fallbacks */
+(function loadReference(){
+  const img=document.getElementById('refImg');
+  const candidates=[
+    'data/reference.png',
+    'data/reference.jpg',
+    'data/SAT-FORMULA-SHEET-1024x595.jpg',
+    'data/reference.jpeg'
+  ];
+  let i=0;
+  function tryNext(){
+    if(i>=candidates.length){
+      img.remove();
+      document.querySelector('#refWin .ref-wrap').innerHTML =
+        '<div class="muted">Reference image not found. Add one at <code>docs/data/reference.png</code> (or .jpg).</div>';
+      return;
+    }
+    img.src=candidates[i++];
+    img.onerror=tryNext;
+  }
+  tryNext();
+})();
+
+/* ======= mini generator (unchanged) ======= */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
@@ -264,7 +270,7 @@ function generateItem(tpl, seed="demo"){
     const D={}; let okDer=true; for(const[k,e] of Object.entries(derived)){try{D[k]=evalExpr(e,{...P,...D});}catch{okDer=false;break;}}
     if(!okDer)continue;
     let ok=true; for(const c of constraints){try{if(!evalExpr(c,{...P,...D})){ok=false;break;}}catch{ok=false;break;}} if(!ok)continue;
-    let ans = safeEvalOrLiteral(answer,{...P,...D});
+    let ans=safeEvalOrLiteral(answer,{...P,...D});
     const opts=[]; for(const d of distractors){const v=safeEvalOrLiteral(d,{...P,...D,ans}); if(String(v)!==String(ans)) opts.push(v);}
     return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
   }
@@ -272,11 +278,7 @@ function generateItem(tpl, seed="demo"){
 }
 
 const FILES={HOA:"data/MASTER_HOA_SAT.json",PAM:"data/MASTER_PAM_SAT.json",PSDA:"data/MASTER_PSDA_SAT.json",GEOT:"data/MASTER_GEOT_SAT.json"};
-
-async function loadAll(){
-  const all = await Promise.all(Object.values(FILES).map(u => fetch(u,{cache:"no-store"}).then(r=>r.json())));
-  return all.flat();
-}
+async function loadAll(){const all=await Promise.all(Object.values(FILES).map(u=>fetch(u,{cache:"no-store"}).then(r=>r.json())));return all.flat();}
 function renderMath(){ if(window.renderMathInElement){ window.renderMathInElement(document.body,{ delimiters:[
   {left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false},{left:"$",right:"$",display:false}
 ], throwOnError:false}); } }
@@ -316,14 +318,11 @@ function show(i){
 document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
 document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
 
-/* Timer (35:00) */
 let seconds=35*60; const tEl=document.getElementById('timer');
 setInterval(()=>{ if(seconds<=0) return; seconds--; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); tEl.textContent=`${m}:${s}`; },1000);
 
-/* Boot */
 (async function(){
   const all=await loadAll();
-  // Rough E/M/H sampling (7/10/5)
   const E=all.filter(x=>(x.difficulty||'M')==='E');
   const M=all.filter(x=>(x.difficulty||'M')==='M');
   const H=all.filter(x=>(x.difficulty||'M')==='H');
