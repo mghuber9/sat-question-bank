@@ -6,14 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:,">
 
-  <!-- KaTeX for reference-sheet math -->
+  <!-- KaTeX for any math in the UI -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 
+  <!-- Desmos official API (demo key from Desmos docs) -->
+  <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+
   <style>
     :root{
-      --blue-900:#163d86;  /* banner */
+      --blue-900:#163d86;  /* header */
       --blue-800:#1f4fa7;
       --blue-700:#2a66cf;  /* buttons/accent */
       --blue-100:#e8f1ff;
@@ -27,34 +30,20 @@
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 
-    /* Top bar (Bluebook-ish) */
-    .top{
-      position:sticky;top:0;z-index:50;
-      background:var(--blue-900);color:#fff;
-      box-shadow:var(--shadow);
-    }
-    .top .row{
-      display:flex;align-items:center;gap:16px;
-      padding:10px 16px;
-    }
+    /* Top bar */
+    .top{position:sticky;top:0;z-index:50;background:var(--blue-900);color:#fff;box-shadow:var(--shadow)}
+    .top .row{display:flex;align-items:center;gap:16px;padding:10px 16px}
     .brand{font-weight:700;letter-spacing:.2px}
-    .subtle{opacity:.9}
     .gutter{flex:1}
     .pill{background:rgba(255,255,255,.12);padding:6px 10px;border-radius:999px}
-    .btn{
-      background:var(--blue-700);color:#fff;border:none;border-radius:8px;
-      padding:8px 12px;cursor:pointer;font-weight:600;
-    }
+    .btn{background:var(--blue-700);color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
     .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,.5)}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .timer{min-width:78px;text-align:center;font-variant-numeric:tabular-nums}
 
     /* Main layout */
     .wrap{max-width:980px;margin:18px auto;padding:0 16px}
-    .card{
-      background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;
-      box-shadow:var(--shadow);
-    }
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
     .qhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
     .qnum{background:var(--blue-100);border:1px solid var(--border);color:var(--blue-900);width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-weight:700}
     .stem{font-size:17px}
@@ -64,43 +53,37 @@
     .choice.selected{outline:2px solid var(--blue-700)}
     .constructed{display:flex;gap:10px;align-items:center;margin-top:10px}
     .constructed input{padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px}
-
     .nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:10px}
     .muted{color:var(--muted)}
-    .katex-display{margin:0.4em 0}
 
-    /* Tools (calculator / reference) — floating windows */
+    /* Floating tool windows */
     .tool-window{
-      position:fixed;left:40px;top:90px;width:460px;background:#fff;border:1px solid var(--border);
+      position:fixed;left:40px;top:90px;width:520px;background:#fff;border:1px solid var(--border);
       border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.18);display:none;flex-direction:column;z-index:60;
     }
     .tool-window.active{display:flex}
     .titlebar{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
       padding:10px 12px;background:var(--blue-800);color:#fff;border-radius:12px 12px 0 0;
-      cursor:grab; user-select:none;
+      cursor:grab;user-select:none;
     }
     .titlebar:active{cursor:grabbing}
     .titlebar h3{margin:0;font-size:14px;font-weight:700;letter-spacing:.2px}
     .tool-actions{display:flex;gap:6px}
-    .tiny{
-      background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer
-    }
+    .tiny{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer}
     .tiny:hover{background:rgba(255,255,255,.25)}
     .content{padding:0;background:#fff;border-radius:0 0 12px 12px}
     .tabs{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--border)}
     .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer}
     .tab.active{background:var(--blue-100);border-color:var(--blue-700);color:var(--blue-900);font-weight:600}
-    .iframe-holder{height:430px}
-    .iframe-holder iframe{width:100%;height:100%;border:0;border-radius:0 0 12px 12px}
 
-    /* Reference sheet styling */
+    /* Desmos containers */
+    .calc-holder{height:460px;padding:0 10px 10px}
+    .calc-canvas{width:100%;height:100%;border:0;border-radius:0 0 12px 12px}
+
+    /* Reference sheet image */
     .ref-wrap{padding:12px}
-    .ref-grid{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:12px}
-    @media (min-width:800px){ .ref-grid{grid-template-columns:repeat(3, minmax(0,1fr));} }
-    .ref-card{border:1px solid var(--border);border-radius:10px;background:#fff;padding:10px}
-    .ref-card h4{margin:0 0 6px 0;color:var(--blue-900);font-size:14px}
-    .ref-card svg{display:block;background:#fff;border-radius:8px;margin:2px 0 6px 0}
+    .ref-img{width:100%;height:auto;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
   </style>
 </head>
 <body>
@@ -118,9 +101,7 @@
 
   <!-- Main -->
   <main class="wrap">
-    <div class="card" id="statusCard">
-      <div class="muted" id="status">Loading module…</div>
-    </div>
+    <div class="card" id="statusCard"><div class="muted" id="status">Loading module…</div></div>
 
     <div class="card" id="qCard" style="display:none">
       <div class="qhead">
@@ -144,8 +125,8 @@
     </div>
   </main>
 
-  <!-- CALCULATOR WINDOW -->
-  <div id="calcWin" class="tool-window" style="width:520px;left:40px;top:100px;">
+  <!-- CALCULATOR WINDOW (Desmos API) -->
+  <div id="calcWin" class="tool-window" style="left:40px;top:110px;">
     <div class="titlebar" data-handle>
       <h3>Calculator</h3>
       <div class="tool-actions">
@@ -155,129 +136,38 @@
     </div>
     <div class="content">
       <div class="tabs">
-        <button class="tab active" data-tab="graphing">Graphing</button>
-        <button class="tab" data-tab="scientific">Scientific</button>
+        <button class="tab active" data-tab="graph">Graphing</button>
+        <button class="tab" data-tab="sci">Scientific</button>
       </div>
-      <div class="iframe-holder" id="calcG">
-        <!-- Force expressions panel for graphing -->
-        <iframe src="https://www.desmos.com/calculator?embed&lang=en&expressions=1&expressionsCollapsed=false&zoomButtons=1"></iframe>
-      </div>
-      <div class="iframe-holder" id="calcS" style="display:none">
-        <iframe src="https://www.desmos.com/scientific?embed&lang=en"></iframe>
+      <div class="calc-holder">
+        <div id="graphCalc" class="calc-canvas"></div>
+        <div id="sciCalc" class="calc-canvas" style="display:none"></div>
       </div>
     </div>
   </div>
 
-  <!-- REFERENCE WINDOW -->
-  <div id="refWin" class="tool-window" style="width:720px;left:100px;top:140px;">
+  <!-- REFERENCE WINDOW (exact sheet as image) -->
+  <div id="refWin" class="tool-window" style="width:760px;left:120px;top:160px;">
     <div class="titlebar" data-handle>
       <h3>Reference Sheet</h3>
-      <div class="tool-actions">
-        <button class="tiny" data-close aria-label="Close">✕</button>
-      </div>
+      <div class="tool-actions"><button class="tiny" data-close aria-label="Close">✕</button></div>
     </div>
     <div class="content">
-      <div class="ref-wrap" id="refWrap">
-        <div class="ref-grid">
-          <div class="ref-card">
-            <h4>Circle</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <circle cx="40" cy="35" r="22" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <line x1="40" y1="35" x2="62" y2="35" stroke="#7c8bb0" stroke-width="2"/>
-              <circle cx="40" cy="35" r="2" fill="#7c8bb0"/>
-              <text x="66" y="39" fill="#7c8bb0" font-size="12">r</text>
-            </svg>
-            <div>A = \( \pi r^2 \)</div>
-            <div>C = \( 2\pi r \)</div>
-          </div>
-
-          <div class="ref-card">
-            <h4>Rectangle</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <rect x="22" y="20" width="76" height="36" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="58" y="18" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ</text>
-              <text x="100" y="40" fill="#7c8bb0" font-size="12">w</text>
-            </svg>
-            <div>A = \( \ell w \)</div>
-          </div>
-
-          <div class="ref-card">
-            <h4>Right Triangle</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <polygon points="18,56 90,56 18,18" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <rect x="18" y="50" width="8" height="6" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="54" y="66" text-anchor="middle" fill="#7c8bb0" font-size="12">a</text>
-              <text x="8"  y="38" fill="#7c8bb0" font-size="12">b</text>
-              <text x="84" y="28" fill="#7c8bb0" font-size="12">c</text>
-            </svg>
-            <div>A = \( \tfrac12 bh \)</div>
-            <div>\( c^2 = a^2 + b^2 \)</div>
-          </div>
-
-          <div class="ref-card">
-            <h4>Prism & Cylinder</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <rect x="12" y="20" width="36" height="28" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="30" y="18" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ</text>
-              <text x="50" y="38" fill="#7c8bb0" font-size="12">w</text>
-              <text x="30" y="56" text-anchor="middle" fill="#7c8bb0" font-size="12">h</text>
-
-              <ellipse cx="92" cy="26" rx="16" ry="8" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <path d="M76 26v20c0 5 32 5 32 0V26" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="92" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">h</text>
-            </svg>
-            <div>Prism: \( V = \ell w h \)</div>
-            <div>Cylinder: \( V = \pi r^2 h \)</div>
-          </div>
-
-          <div class="ref-card">
-            <h4>Sphere</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <circle cx="60" cy="35" r="22" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <ellipse cx="60" cy="35" rx="22" ry="8" fill="none" stroke="#7c8bb0" stroke-width="2"/>
-            </svg>
-            <div>V = \( \tfrac{4}{3} \pi r^3 \)</div>
-          </div>
-
-          <div class="ref-card">
-            <h4>Cone & Pyramid</h4>
-            <svg width="100%" viewBox="0 0 120 70">
-              <polygon points="16,52 44,52 30,18" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="30" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">r</text>
-              <polygon points="72,52 104,52 88,20" fill="#fff" stroke="#7c8bb0" stroke-width="2"/>
-              <text x="88" y="58" text-anchor="middle" fill="#7c8bb0" font-size="12">ℓ, w</text>
-            </svg>
-            <div>Cone: \( V = \tfrac{1}{3}\pi r^2 h \)</div>
-            <div>Pyramid: \( V = \tfrac{1}{3}\,\ell w h \)</div>
-          </div>
-        </div>
-
-        <h4 style="margin:14px 0 6px 0;color:var(--blue-900)">Special Right Triangles</h4>
-        <div class="muted" style="line-height:1.6">
-          \(30^\circ\!-\!60^\circ\!-\!90^\circ\): sides \(x, x\sqrt{3}, 2x\). &nbsp;
-          \(45^\circ\!-\!45^\circ\!-\!90^\circ\): sides \(s, s, s\sqrt{2}\).
-        </div>
-
-        <p class="muted" style="margin-top:12px">
-          Degrees of arc in a circle: 360.  Radians of arc in a circle: \(2\pi\).  
-          Angle sum in a triangle: 180.
-        </p>
+      <div class="ref-wrap">
+        <!-- Put your image at docs/data/reference.png -->
+        <img class="ref-img" src="data/reference.png" alt="SAT Math Reference Sheet">
       </div>
     </div>
   </div>
 
 <script>
-/* -----------------------------------------------------------
-   ERROR SURFACE
------------------------------------------------------------ */
+/* =============== error surface =============== */
 window.addEventListener('error', e => {
   const s = document.getElementById('status');
   if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
 });
 
-/* -----------------------------------------------------------
-   DRAGGABLE WINDOWS (fixed to drag only on titlebar)
------------------------------------------------------------ */
+/* =============== draggable windows (titlebar only) =============== */
 function makeDraggable(win){
   const handle = win.querySelector('[data-handle]');
   let startX=0, startY=0, startL=0, startT=0, dragging=false, moved=false, zTop=60;
@@ -286,65 +176,77 @@ function makeDraggable(win){
   function onMouseDown(e){
     if (e.button !== 0) return;
     dragging=true; moved=false;
-    const rect = win.getBoundingClientRect();
-    startX = e.clientX; startY = e.clientY;
-    startL = rect.left; startT = rect.top;
-    win.style.zIndex = (++zTop).toString();
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    const r = win.getBoundingClientRect();
+    startX=e.clientX; startY=e.clientY; startL=r.left; startT=r.top;
+    win.style.zIndex=(++zTop).toString();
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
     e.preventDefault();
   }
-  function onMouseMove(e){
-    if (!dragging) return;
-    const dx = e.clientX - startX, dy = e.clientY - startY;
-    if (!moved && (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH)) moved = true;
-    if (!moved) return;
-    const nx = Math.max(4, Math.min(window.innerWidth - 80, startL + dx));
-    const ny = Math.max(4, Math.min(window.innerHeight - 60, startT + dy));
-    win.style.left = nx + 'px';
-    win.style.top  = ny + 'px';
+  function onMove(e){
+    if(!dragging) return;
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    if(!moved && (Math.abs(dx)>THRESH||Math.abs(dy)>THRESH)) moved=true;
+    if(!moved) return;
+    const nx=Math.max(4, Math.min(window.innerWidth-80, startL+dx));
+    const ny=Math.max(4, Math.min(window.innerHeight-60, startT+dy));
+    win.style.left=nx+'px'; win.style.top=ny+'px';
   }
-  function onMouseUp(){
+  function onUp(){
     dragging=false;
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
   }
   handle.addEventListener('mousedown', onMouseDown);
   win.addEventListener('mousedown', ()=> win.style.zIndex=(++zTop).toString());
-  win.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => win.classList.remove('active')));
+  win.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', ()=> win.classList.remove('active')));
 }
-
 makeDraggable(document.getElementById('calcWin'));
 makeDraggable(document.getElementById('refWin'));
 
-/* -----------------------------------------------------------
-   TOOLS: open/close + tabs
------------------------------------------------------------ */
+/* =============== open/close + Desmos init =============== */
 const calcWin = document.getElementById('calcWin');
 const refWin  = document.getElementById('refWin');
-
-document.getElementById('btnCalc').addEventListener('click', ()=> calcWin.classList.toggle('active'));
+document.getElementById('btnCalc').addEventListener('click', ()=> {
+  calcWin.classList.toggle('active');
+  if (calcWin.classList.contains('active')) ensureDesmos();
+});
 document.getElementById('btnRef').addEventListener('click',  ()=> refWin.classList.toggle('active'));
 
+/* Desmos instances (one-time lazy init) */
+let graphCalc = null, sciCalc = null;
+function ensureDesmos(){
+  if (!graphCalc){
+    const el = document.getElementById('graphCalc');
+    graphCalc = Desmos.GraphingCalculator(el, {
+      expressions: true,
+      expressionsTopbar: true,
+      keypad: true,
+      zoomButtons: true,
+      settingsMenu: false,
+      invertedColors: false,
+    });
+  }
+  if (!sciCalc){
+    const el2 = document.getElementById('sciCalc');
+    sciCalc = Desmos.ScientificCalculator(el2, { keypad: true });
+  }
+}
+
+/* calc tabs */
 (function wireCalcTabs(){
-  const g = document.getElementById('calcG');
-  const s = document.getElementById('calcS');
   const tabs = calcWin.querySelectorAll('.tab');
   tabs.forEach(t => t.addEventListener('click', ()=>{
     tabs.forEach(x => x.classList.remove('active'));
     t.classList.add('active');
-    if (t.dataset.tab === 'graphing'){ g.style.display='block'; s.style.display='none'; }
-    else { s.style.display='block'; g.style.display='none'; }
+    const isGraph = t.dataset.tab === 'graph';
+    document.getElementById('graphCalc').style.display = isGraph ? 'block' : 'none';
+    document.getElementById('sciCalc').style.display   = isGraph ? 'none'  : 'block';
+    ensureDesmos();
   }));
 })();
 
-/* -----------------------------------------------------------
-   LIGHTWEIGHT DEMO RENDERER
-   (You can replace this later with your full test engine.
-    For now it loads a few items and renders MC/CR.)
------------------------------------------------------------ */
-
-/*** Deterministic RNG (same as viewer) ***/
+/* =============== mini demo engine (same as before) =============== */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
@@ -369,106 +271,67 @@ function generateItem(tpl, seed="demo"){
   throw new Error("Constraint not satisfiable.");
 }
 
-/* Load a small set to demo; you can replace with your module builder */
-const FILES={
-  HOA:"data/MASTER_HOA_SAT.json",
-  PAM:"data/MASTER_PAM_SAT.json",
-  PSDA:"data/MASTER_PSDA_SAT.json",
-  GEOT:"data/MASTER_GEOT_SAT.json"
-};
+const FILES={HOA:"data/MASTER_HOA_SAT.json",PAM:"data/MASTER_PAM_SAT.json",PSDA:"data/MASTER_PSDA_SAT.json",GEOT:"data/MASTER_GEOT_SAT.json"};
 
 async function loadAll(){
   const all = await Promise.all(Object.values(FILES).map(u => fetch(u,{cache:"no-store"}).then(r=>r.json())));
   return all.flat();
 }
-
-function renderMath(){
-  if (window.renderMathInElement) {
-    window.renderMathInElement(document.body, {
-      delimiters:[
-        {left:"$$",right:"$$",display:true},
-        {left:"\\[",right:"\\]",display:true},
-        {left:"\\(",right:"\\)",display:false},
-        {left:"$", right:"$", display:false},
-      ],
-      throwOnError:false
-    });
-  }
-}
+function renderMath(){ if(window.renderMathInElement){ window.renderMathInElement(document.body,{ delimiters:[
+  {left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false},{left:"$",right:"$",display:false}
+], throwOnError:false}); } }
 
 let items=[], gen=[], idx=0, answers = new Map();
-
 function show(i){
-  const card = document.getElementById('qCard');
-  const st   = document.getElementById('statusCard');
-  st.style.display='none'; card.style.display='block';
+  const card=document.getElementById('qCard'), st=document.getElementById('statusCard'); st.style.display='none'; card.style.display='block';
+  idx=Math.max(0,Math.min(gen.length-1,i)); const it=gen[idx];
+  document.getElementById('qNum').textContent=(idx+1);
+  document.getElementById('qLoc').textContent=`Question ${idx+1} of ${gen.length}`;
+  document.getElementById('stem').innerHTML=it.stem;
 
-  idx = Math.max(0, Math.min(gen.length-1, i));
-  const it = gen[idx];
-
-  document.getElementById('qNum').textContent = (idx+1);
-  document.getElementById('qLoc').textContent = `Question ${idx+1} of ${gen.length}`;
-  document.getElementById('stem').innerHTML = it.stem;
-
-  const mc = document.getElementById('mcWrap');
-  const cr = document.getElementById('crWrap');
-  mc.innerHTML = '';
-
-  if (it.distractors && it.distractors.length){
-    // multiple choice
+  const mc=document.getElementById('mcWrap'), cr=document.getElementById('crWrap'); mc.innerHTML='';
+  if(it.distractors && it.distractors.length){
     mc.style.display='grid'; cr.style.display='none';
-    const opts = seededShuffle([it.answer, ...it.distractors], 'opts:'+idx).map(v=>String(v));
-    const saved = answers.get(idx);
+    const opts=seededShuffle([it.answer,...it.distractors],'opts:'+idx).map(v=>String(v));
+    const saved=answers.get(idx);
     opts.forEach(o=>{
-      const div = document.createElement('div');
-      div.className = 'choice' + (saved===o ? ' selected' : '');
-      div.textContent = o;
-      div.addEventListener('click', ()=>{
-        answers.set(idx, o);
+      const div=document.createElement('div');
+      div.className='choice'+(saved===o?' selected':'');
+      div.textContent=o;
+      div.addEventListener('click',()=>{
+        answers.set(idx,o);
         mc.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
         div.classList.add('selected');
       });
       mc.appendChild(div);
     });
   } else {
-    // constructed response
     mc.style.display='none'; cr.style.display='flex';
-    const input = document.getElementById('crInput');
-    input.value = answers.get(idx) ?? '';
-    input.oninput = ()=> answers.set(idx, input.value);
+    const input=document.getElementById('crInput');
+    input.value=answers.get(idx)??''; input.oninput=()=>answers.set(idx,input.value);
   }
-
-  document.getElementById('navStatus').textContent = `${idx+1}/${gen.length}`;
+  document.getElementById('navStatus').textContent=`${idx+1}/${gen.length}`;
   renderMath();
 }
-
-document.getElementById('prevBtn').addEventListener('click', ()=> show(idx-1));
-document.getElementById('nextBtn').addEventListener('click', ()=> show(idx+1));
+document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
 
 /* Timer (35:00) */
-let seconds = 35*60;
-const tEl = document.getElementById('timer');
-setInterval(()=>{
-  if (seconds<=0) return;
-  seconds--;
-  const m = Math.floor(seconds/60).toString().padStart(2,'0');
-  const s = (seconds%60).toString().padStart(2,'0');
-  tEl.textContent = `${m}:${s}`;
-}, 1000);
+let seconds=35*60; const tEl=document.getElementById('timer');
+setInterval(()=>{ if(seconds<=0) return; seconds--; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); tEl.textContent=`${m}:${s}`; },1000);
 
 /* Boot */
 (async function(){
-  const all = await loadAll();
-  // Rough E/M/H sampling (7/10/5) across all domains
-  const E = all.filter(x => (x.difficulty||'M')==='E');
-  const M = all.filter(x => (x.difficulty||'M')==='M');
-  const H = all.filter(x => (x.difficulty||'M')==='H');
-
-  function take(arr,n,tag){ return seededShuffle(arr, tag).slice(0,n); }
-  items = [...take(E,7,'E'), ...take(M,10,'M'), ...take(H,5,'H')];
-  const seedBase = 'module1';
-  gen = items.map((it,i)=> generateItem(it.template, `${seedBase}:${it.id||i}`));
-  document.getElementById('status').textContent = 'Module ready.';
+  const all=await loadAll();
+  // Rough E/M/H sampling (7/10/5)
+  const E=all.filter(x=>(x.difficulty||'M')==='E');
+  const M=all.filter(x=>(x.difficulty||'M')==='M');
+  const H=all.filter(x=>(x.difficulty||'M')==='H');
+  function take(arr,n,tag){ return seededShuffle(arr,tag).slice(0,n); }
+  items=[...take(E,7,'E'),...take(M,10,'M'),...take(H,5,'H')];
+  const seedBase='module1';
+  gen=items.map((it,i)=>generateItem(it.template,`${seedBase}:${it.id||i}`));
+  document.getElementById('status').textContent='Module ready.';
   show(0);
 })();
 </script>
