@@ -1,175 +1,233 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Digital SAT — Math Practice Test</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <title>SAT Practice — Test Runner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link rel="icon" href="data:,">
 
-  <style>
-    :root { --bg:#0b1020; --card:#121a2c; --text:#e8edf7; --muted:#9fb0d0; --accent:#5ea0ff; --accent2:#76e0a3; --danger:#ff6b6b;}
-    html,body { margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
-    a { color: var(--accent); }
-    header { padding:18px 20px; border-bottom:1px solid #20304f; display:flex; align-items:center; gap:12px; }
-    header h1 { margin:0; font-size:18px; font-weight:700; }
-    main { max-width:980px; margin:0 auto; padding:20px; }
-    .card { background:var(--card); border:1px solid #20304f; border-radius:14px; padding:18px; }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .spacer { flex:1; }
-    select,input,button,textarea { background:#0f1726; color:var(--text); border:1px solid #253454; border-radius:10px; padding:10px 12px; font-size:14px; }
-    button { cursor:pointer; }
-    button.primary { background:var(--accent); color:#081120; border:none;}
-    button.ghost { background:#131c31; }
-    button.danger { background:var(--danger); color:#081120; border:none;}
-    .muted { color:var(--muted); }
-    .grid { display:grid; gap:14px; }
-    .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .pill { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:999px; border:1px solid #2a3a5c; background:#0f1726; color:#cfe0ff; }
-    .pill.ans { background:#24436f; border-color:#3b5aa0; }
-    .pill.flag { outline:2px solid var(--accent2); }
-    .timer { font-variant-numeric: tabular-nums; font-weight:700; }
-    .stem { font-size:16px; line-height:1.5; white-space:pre-wrap; }
-    ul.choices { list-style:none; padding-left:0; display:grid; gap:8px; margin:10px 0 0 0; }
-    .choice { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1px solid #2a3a5c; border-radius:10px; cursor:pointer; }
-    .choice input { margin-top:4px; }
-    .free-wrap { margin:10px 0 0; display:flex; gap:10px; align-items:center; }
-    .free-wrap input { width:200px; }
-    details { margin-top:10px; }
-    .k { color:#b5c7ea; }
-    .tag { font-size:12px; padding:2px 8px; border:1px solid #2a3a5c; border-radius:999px; margin-left:6px; color:#cfe0ff; }
-    .good { color:var(--accent2); }
-    .bad { color:#ff9b9b; }
-    .grid22 { display:grid; grid-template-columns: repeat(11, 1fr); gap:6px; }
-    .grid22 button { padding:8px 0; }
-    .hidden { display:none !important; }
-  </style>
-
-  <!-- KaTeX (optional) -->
+  <!-- KaTeX for math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root{
+      --blue:#0a4ad3;
+      --blue-d:#083a9f;
+      --bg:#0b1020;
+      --panel:#121a2c;
+      --card:#151f36;
+      --text:#e8edf7;
+      --muted:#a9b6d6;
+      --ok:#1db954;
+      --warn:#f6c25b;
+      --danger:#ff6b6b;
+      --border:#233154;
+    }
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;min-height:100%;}
+    /* Header */
+    .topbar{
+      position:sticky;top:0;z-index:20;background:linear-gradient(0deg,#0f1a34, #0f1a34) padding-box,linear-gradient(90deg,#17305e,#0f1a34) border-box;
+      border-bottom:1px solid var(--border);
+      display:flex;gap:14px;align-items:center;padding:10px 14px;
+    }
+    .brand{font-weight:700}
+    .pill{background:#0f1730;border:1px solid var(--border);border-radius:10px;padding:4px 8px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .timer{font-weight:700;color:#fff;background:var(--blue);border-color:transparent}
+    .spacer{flex:1}
+    .btn{background:#0f1730;color:#fff;border:1px solid var(--border);padding:8px 10px;border-radius:10px;cursor:pointer}
+    .btn.primary{background:var(--blue);border-color:var(--blue)}
+    .btn:hover{filter:brightness(1.1)}
+    .icon{opacity:.85}
+    /* Progress bar */
+    .progress-wrap{padding:6px 14px;border-bottom:1px solid var(--border);background:#0f1730}
+    .progress{height:6px;background:#0c1224;border-radius:999px;overflow:hidden}
+    .progress>div{height:100%;background:linear-gradient(90deg,#3395ff,#5ea0ff);width:0%}
+
+    /* Layout */
+    .wrap{max-width:980px;margin:16px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .qnum{font-weight:700;background:#0f1730;border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+    .review-toggle{margin-left:auto}
+    .review-toggle input{display:none}
+    .review-toggle label{display:flex;gap:8px;align-items:center;background:#0f1730;border:1px solid var(--border);border-radius:10px;padding:6px 10px;color:var(--muted);cursor:pointer}
+    .review-toggle input:checked+label{background:#1b2544;color:#ffe28a;border-color:#5b6ea1}
+
+    .stem{font-size:18px;line-height:1.5;white-space:pre-wrap}
+    .choices{margin-top:14px;display:grid;gap:10px}
+    .choice{background:#0f1730;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+    .choice input{margin-top:4px}
+    .choice:hover{border-color:#38538a}
+    .free{display:flex;gap:8px;align-items:center}
+    .free input[type="text"]{flex:1;background:#0b1328;border:1px solid var(--border);border-radius:8px;padding:8px;color:#fff}
+
+    /* Bottom bar */
+    .bottombar{
+      position:sticky;bottom:0;z-index:10;background:#0f1730;border-top:1px solid var(--border);
+      display:flex;gap:12px;align-items:center;padding:10px 14px
+    }
+    .meta{color:var(--muted)}
+    .right{margin-left:auto;display:flex;gap:8px}
+    .btn.secondary{background:#0b152c}
+
+    /* Modals */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:1100px;width:96%;max-height:90vh;display:flex;flex-direction:column}
+    .modal .panel header{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border)}
+    .modal .panel header .spacer{flex:1}
+    .modal .panel .body{padding:0;overflow:auto}
+    .tabs{display:flex;gap:8px}
+    .tab{padding:6px 10px;border:1px solid var(--border);border-radius:10px;background:#0f1730;color:#fff;cursor:pointer}
+    .tab.active{background:var(--blue)}
+    .iframe-holder{height:70vh}
+    .iframe-holder iframe{width:100%;height:100%;border:0}
+
+    /* Reference sheet content */
+    .ref-wrap{padding:16px}
+    .ref-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+    .ref-card{background:#0f1730;border:1px solid var(--border);border-radius:12px;padding:12px}
+    .ref-card h4{margin:0 0 8px 0;font-weight:700}
+    .muted{color:var(--muted)}
+    @media (max-width:860px){
+      .ref-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:520px){
+      .ref-grid{grid-template-columns:1fr}
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Digital SAT — Math Practice Test</h1>
-  <div class="spacer"></div>
-  <a href="index.html" class="muted">Viewer</a>
-  <div id="hdrTimer" class="timer muted">—:—</div>
-</header>
 
-<main>
-  <!-- ---------- Start Screen ---------- -->
-  <section id="start" class="grid">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">Section 2, Module <span id="modNo">1</span>: Math</div>
+    <div class="pill timer" id="timer">35:00</div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnCalc" title="Calculator (Desmos)">Calculator</button>
+    <button class="btn" id="btnRef" title="Reference Sheet">Reference</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress"><div id="progFill"></div></div>
+  </div>
+
+  <!-- QUESTION AREA -->
+  <main class="wrap">
     <div class="card">
-      <h2 style="margin:0 0 8px">Setup</h2>
-      <div class="muted">Two 22-question modules (35 min each). Module 2 adapts based on Module 1 performance.</div>
-      <div style="height:12px"></div>
-
-      <div class="controls">
-        <label>Seed <input id="seed" placeholder="e.g. test-2025-09-28" style="width:220px"></label>
-        <label>Domain mix
-          <select id="domainPreset">
-            <option value="default">Default (HOA 35, PAM 25, PSDA 25, GEOT 15)</option>
-            <option value="even">Even across domains</option>
-          </select>
-        </label>
-        <span class="muted">Difficulty mixes and SPR/MC split are built in.</span>
+      <div class="qhead">
+        <div class="qnum">Question <span id="qIndex">1</span> of <span id="qTotal">22</span></div>
+        <div class="review-toggle">
+          <input id="mark" type="checkbox">
+          <label for="mark">⭐ Mark for Review</label>
+        </div>
       </div>
+      <div id="stem" class="stem"></div>
+      <div id="choices" class="choices"></div>
+    </div>
+  </main>
 
-      <div class="row">
-        <button id="btnStart" class="primary">Start Module 1</button>
+  <!-- BOTTOM BAR -->
+  <div class="bottombar">
+    <div class="meta"><span id="routeLabel">Module 1</span></div>
+    <div class="right">
+      <button class="btn secondary" id="btnBack">Back</button>
+      <button class="btn primary" id="btnNext">Next</button>
+    </div>
+  </div>
+
+  <!-- CALCULATOR MODAL -->
+  <div class="modal" id="calcModal" aria-hidden="true">
+    <div class="panel">
+      <header>
+        <strong>Calculator</strong>
         <div class="spacer"></div>
-        <label class="muted">Load results JSON <input type="file" id="loadJson" accept="application/json"></label>
+        <div class="tabs">
+          <button class="tab active" data-tab="g">Graphing</button>
+          <button class="tab" data-tab="s">Scientific</button>
+        </div>
+        <a class="btn" target="_blank" rel="noopener" href="https://www.desmos.com/calculator?lang=en" title="Pop out">Pop out ↗</a>
+        <button class="btn" id="closeCalc">Close</button>
+      </header>
+      <div class="body">
+        <div class="iframe-holder" id="calcG"><iframe src="https://www.desmos.com/calculator?embed"></iframe></div>
+        <div class="iframe-holder" id="calcS" style="display:none"><iframe src="https://www.desmos.com/scientific?embed"></iframe></div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ---------- Module Runner ---------- -->
-  <section id="runner" class="grid hidden">
-    <div class="card">
-      <div class="row">
-        <div id="moduleTitle"><strong>Module 1</strong> · 22 questions · <span class="timer" id="moduleTimer">35:00</span></div>
+  <!-- REFERENCE MODAL -->
+  <div class="modal" id="refModal" aria-hidden="true">
+    <div class="panel">
+      <header>
+        <strong>Reference Sheet</strong>
         <div class="spacer"></div>
-        <button id="btnReview" class="ghost">Review grid</button>
-        <button id="btnSubmit" class="danger">Submit module</button>
-      </div>
-      <div style="height:8px"></div>
-
-      <div id="progress" class="row"></div>
-
-      <div style="height:10px"></div>
-      <div id="reviewGrid" class="grid22 hidden"></div>
-
-      <div style="height:12px"></div>
-      <div id="qcard" class="grid">
-        <!-- question injected -->
-      </div>
-
-      <div class="row">
-        <button id="btnPrev" class="ghost">Previous</button>
-        <button id="btnFlag" class="ghost">Mark for review</button>
-        <div class="spacer"></div>
-        <button id="btnNext" class="primary">Next</button>
+        <button class="btn" id="closeRef">Close</button>
+      </header>
+      <div class="body ref-wrap">
+        <!-- A compact SAT-style reference sheet -->
+        <div class="ref-grid">
+          <div class="ref-card">
+            <h4>Circle</h4>
+            <div>A = \( \pi r^2 \)</div>
+            <div>C = \( 2\pi r \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Rectangle</h4>
+            <div>A = \( \ell w \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Triangle</h4>
+            <div>A = \( \frac12 bh \)</div>
+            <div>\( c^2 = a^2 + b^2 \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Prism</h4>
+            <div>V = \( \ell w h \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Cylinder</h4>
+            <div>V = \( \pi r^2 h \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Sphere</h4>
+            <div>V = \( \frac{4}{3}\pi r^3 \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Cone</h4>
+            <div>V = \( \frac{1}{3}\pi r^2 h \)</div>
+          </div>
+          <div class="ref-card">
+            <h4>Pyramid</h4>
+            <div>V = \( \frac{1}{3}\ell w h \)</div>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:16px">
+          The number of degrees of arc in a circle is 360. The number of radians of arc in a circle is \(2\pi\).  
+          The sum of the measures in degrees of the angles of a triangle is 180.
+        </p>
+        <h4 style="margin-top:8px">Special Right Triangles</h4>
+        <p>\(30^\circ-60^\circ-90^\circ\): sides \(x, x\sqrt{3}, 2x\). &nbsp; 
+           \(45^\circ-45^\circ-90^\circ\): sides \(s, s, s\sqrt{2}\).</p>
       </div>
     </div>
-  </section>
-
-  <!-- ---------- Intermission / Route ---------- -->
-  <section id="route" class="grid hidden">
-    <div class="card">
-      <h2 style="margin:0 0 6px">Module 1 submitted</h2>
-      <div id="routeMsg" class="muted"></div>
-      <div style="height:12px"></div>
-      <button id="btnStartM2" class="primary">Start Module 2</button>
-    </div>
-  </section>
-
-  <!-- ---------- Results ---------- -->
-  <section id="results" class="grid hidden">
-    <div class="card">
-      <h2 style="margin:0 0 6px">Results</h2>
-      <div id="scoreline"></div>
-      <div class="muted" id="breakdown"></div>
-      <div style="height:12px"></div>
-      <details>
-        <summary>Review questions</summary>
-        <div id="reviewList" class="grid" style="margin-top:10px"></div>
-      </details>
-      <div style="height:14px"></div>
-      <div class="row">
-        <button id="btnJson" class="ghost">Download JSON</button>
-        <button id="btnCsv" class="ghost">Copy CSV</button>
-        <div class="spacer"></div>
-        <button id="btnRestart" class="ghost">Back to start</button>
-      </div>
-    </div>
-  </section>
-</main>
+  </div>
 
 <script>
-/* ---------- surface script errors in UI ---------- */
-window.addEventListener('error', e => {
-  const t = document.getElementById('breakdown');
-  if (t) t.textContent = '⚠️ ' + (e.error?.message || e.message || 'unknown error');
-});
+/* ---------- CONFIG (easy to tweak) ---------- */
+const MODULE_TIME_SECONDS = 35 * 60;
 
-/*** ---------- CONSTANTS ---------- ***/
-// Domain weights
-const DOMAIN_WEIGHTS = {
-  default: { HOA: 0.35, PAM: 0.25, PSDA: 0.25, GEOT: 0.15 },
-  even:    { HOA: 0.25, PAM: 0.25, PSDA: 0.25, GEOT: 0.25 }
+/* Difficulty mix approximations (public info–style) */
+const MIX = {
+  m1: {E: 13, M: 7, H: 2},
+  m2_easy: {E: 14, M: 8, H: 0},
+  m2_hard: {E: 6,  M: 8, H: 8}
 };
+const ROUTE_THRESHOLD = 14; // correct needed in Module 1 to route to hard Module 2
 
-// Difficulty mixes + SPR targets (approximate public info)
-const BLUEPRINT = {
-  module1:     { total: 22, diffs: { E: 0.45, M: 0.40, H: 0.15 }, spr: 7 },   // ~15 MC, 7 SPR
-  module2_easy:{ total: 22, diffs: { E: 0.65, M: 0.30, H: 0.05 }, spr: 7 },
-  module2_hard:{ total: 22, diffs: { E: 0.20, M: 0.45, H: 0.35 }, spr: 7 },
-  timeMin: 35,
-  routeThreshold: 15 // ≥15 correct in M1 -> hard route
-};
-
-// Data files
+/* Banks */
 const FILES = {
   HOA: "data/MASTER_HOA_SAT.json",
   PAM: "data/MASTER_PAM_SAT.json",
@@ -177,595 +235,358 @@ const FILES = {
   GEOT: "data/MASTER_GEOT_SAT.json"
 };
 
-/*** ---------- RNG ---------- ***/
+/* ---------- UI elements ---------- */
+const el = {
+  timer: document.getElementById('timer'),
+  prog:  document.getElementById('progFill'),
+  modNo: document.getElementById('modNo'),
+  routeLabel: document.getElementById('routeLabel'),
+  qIndex: document.getElementById('qIndex'),
+  qTotal: document.getElementById('qTotal'),
+  stem:   document.getElementById('stem'),
+  choices:document.getElementById('choices'),
+  mark:   document.getElementById('mark'),
+  back:   document.getElementById('btnBack'),
+  next:   document.getElementById('btnNext'),
+  calcBtn:document.getElementById('btnCalc'),
+  refBtn: document.getElementById('btnRef'),
+  calcModal:document.getElementById('calcModal'),
+  refModal: document.getElementById('refModal'),
+  closeCalc:document.getElementById('closeCalc'),
+  closeRef: document.getElementById('closeRef')
+};
+
+/* ---------- RNG (deterministic) ---------- */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
-function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
-function seededShuffle(arr, seed){ const rnd = makeRng(seed); const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function rng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 
-/*** ---------- Fraction & rounding (match viewer) ---------- ***/
-const GLOBAL_FORMAT = { preferFraction:true, maxDecimals:3, fractionMaxDen:200, fractionTol:1e-9 };
-function isNumber(x){ return typeof x === "number" && Number.isFinite(x); }
-function toFraction(x, maxDen=200, tol=1e-9){
-  const sign = x < 0 ? -1 : 1; x = Math.abs(x); if (!isFinite(x)) return null;
-  let h1=1,h0=0,k1=0,k0=1,b=x,a=Math.floor(b),h=a*h1+h0,k=a*k1+k0,prevErr=Math.abs(x-h/k);
-  while(k<=maxDen){ if(Math.abs(x-h/k)<=tol) break; b=1/(b-a); a=Math.floor(b); const h2=a*h+h1,k2=a*k+k1; h1=h;k1=k;h=h2;k=k2; const err=Math.abs(x-h/k); if(err>prevErr)break; prevErr=err; }
-  return { n: sign*h, d: k, err: Math.abs(sign*h/k - sign*x) };
+/* ---------- generator (same as viewer; includes rounding) ---------- */
+function renderStem(stem, vars){ return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=> (k in vars? String(vars[k]) : `{{${k}}}`)); }
+function evalExpr(expr, scope){
+  const keys=["Math","Number",...Object.keys(scope)];
+  const vals=[Math,Number,...Object.values(scope)];
+  if(typeof expr!=="string") return expr;
+  if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: "+expr);
+  return Function(...keys, '"use strict"; return ('+expr+');')(...vals);
 }
-function terminatesWithin(x, maxPlaces){
-  const eps=1e-10; let t=x; for(let k=0;k<=maxPlaces;k++){ if(Math.abs(t-Math.round(t))<eps) return true; t*=10; } return false;
-}
-function formatDisplay(x, tmplFmt=null){
-  if (!isNumber(x)) return x;
-  if (tmplFmt){ if (tmplFmt.fixed!=null) return Number(x.toFixed(+tmplFmt.fixed)); if (tmplFmt.round!=null){const p=Math.pow(10,+tmplFmt.round);return Math.round(x*p)/p;} }
-  const { preferFraction, maxDecimals, fractionMaxDen, fractionTol } = GLOBAL_FORMAT;
-  if (terminatesWithin(x, maxDecimals)) return Number(x.toFixed(maxDecimals));
-  if (preferFraction){ const f=toFraction(x, fractionMaxDen, fractionTol); if (f && f.d>1 && f.err<=fractionTol){ const g=(a,b)=>b?g(b,a%b):Math.abs(a); const gg=g(Math.abs(f.n),f.d); return `${(f.n/gg)}\/${(f.d/gg)}`; } }
-  return Number(x.toFixed(maxDecimals));
-}
-function parseNumericInput(s){
-  s = String(s||'').trim();
-  if (!s) return null;
-  // fraction a/b
-  if (/^[+-]?\s*\d+\s*\/\s*\d+\s*$/.test(s)) {
-    const [a,b] = s.split('/').map(x=>Number(x));
-    if (b === 0) return null;
-    return a / b;
-  }
-  // decimal
-  const v = Number(s);
-  return Number.isFinite(v) ? v : null;
-}
-
-/*** ---------- Generator helpers ---------- ***/
-function pick(spec,rnd){
-  if(!spec)throw new Error("Bad param spec");
-  if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
-  const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);
-  for(let i=0;i<400;i++){ const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min)); if(!exclude.has(v))return v; }
-  throw new Error("Could not sample param (too restrictive).");
-}
-function renderStem(stem,vars){
-  return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));
-}
-function evalExpr(expr,scope){
-  const keys=["Math","Number",...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
-  if(typeof expr!=="string")return expr;
-  if (/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error("Unsafe expression: "+expr);
-  return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
-}
-function safeEvalOrLiteral(expr,scope){
-  if(typeof expr!=="string")return expr;
+function safeEvalOrLiteral(expr, scope){
+  if(typeof expr!=="string") return expr;
   const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
-  try{ if(hasOp) return evalExpr(expr,scope); if(expr in scope) return scope[expr]; return expr; }
-  catch{ return expr; }
+  try{
+    if(hasOp) return evalExpr(expr,scope);
+    if(expr in scope) return scope[expr];
+    return expr;
+  }catch{ return expr; }
 }
-function generateItem(template, seed = "demo") {
-  const rnd = makeRng(seed);
-  const { stem, params = {}, derived = {}, constraints = [], answer, distractors = [] } = template;
-  const tmplFmt = template.format || template.display || null;
-  const MAX_TRIES = 250;
-  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
-    const P = {}; for (const [k, spec] of Object.entries(params)) P[k] = pick(spec, rnd);
-    const D = {}; let okDer = true;
-    for (const [k, expr] of Object.entries(derived)) { try { D[k] = evalExpr(expr, { ...P, ...D }); } catch { okDer = false; break; } }
-    if (!okDer) continue;
-    let ok = true; for (const c of constraints) { try { if (!evalExpr(c, { ...P, ...D })) { ok = false; break; } } catch { ok=false; break; } }
-    if (!ok) continue;
-
-    const ansRaw = safeEvalOrLiteral(answer, { ...P, ...D });
-    const optsRaw = [];
-    for (const d of distractors) {
-      const v = safeEvalOrLiteral(d, { ...P, ...D, ans: ansRaw });
-      if (String(v) !== String(ansRaw)) optsRaw.push(v);
-    }
-
-    const ansDisp = formatDisplay(ansRaw, tmplFmt);
-    const optsDisp = []; const used = new Set([String(ansDisp)]);
-    for (const v of optsRaw){ const f = formatDisplay(v, tmplFmt); if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); } }
-
-    // auto-pad to 4 options when numeric & insufficient distractors
-    if (isNumber(ansRaw) && optsDisp.length < 3) {
-      const padRng = makeRng(seed + ":auto");
-      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ansRaw) || 1)) - 1));
-      const candidates = [ ansRaw + mag, ansRaw - mag, Math.floor(ansRaw), Math.ceil(ansRaw), ansRaw * 1.1, ansRaw * 0.9 ];
-      for (const c of candidates) {
-        const f = formatDisplay(c, tmplFmt);
-        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); if (optsDisp.length >= 3) break; }
-      }
-      while (optsDisp.length < 3) {
-        const delta = (0.5 + padRng()) * mag * (padRng() < 0.5 ? -1 : 1);
-        const f = formatDisplay(ansRaw + delta, tmplFmt);
-        if (!used.has(String(f))) { optsDisp.push(f); used.add(String(f)); }
-      }
-    }
-
-    // is student-produced response? (no distractors or explicit flag)
-    const isSPR = (Array.isArray(distractors) && distractors.length === 0) || template.type === "SPR" || template.response === "numeric";
-
-    return { stem: renderStem(stem, { ...P, ...D }), answerRaw: ansRaw, answer: ansDisp, distractors: optsDisp.slice(0, 3), isSPR };
+function makeRng(seed){ return rng(seed); }
+function pick(spec, rnd){
+  if(!spec) throw new Error("Bad param spec");
+  if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
+  const min=spec.min??0, max=spec.max??min, exclude=new Set(spec.exclude||[]);
+  const isInt=Number.isInteger(min)&&Number.isInteger(max);
+  for(let i=0;i<400;i++){
+    const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));
+    if(!exclude.has(v)) return v;
   }
-  throw new Error("Constraint not satisfiable after multiple attempts");
+  throw new Error("Could not sample param");
 }
-
-/*** ---------- Data load ---------- ***/
-async function loadAllBanks(){
-  const names = Object.keys(FILES);
-  const all = [];
-  for (const n of names) {
-    const resp = await fetch(FILES[n], { cache: "no-store" });
-    if (!resp.ok) throw new Error(`Failed loading ${n}: ${resp.status}`);
-    const data = await resp.json();
-    all.push(...data);
-  }
-  return all;
+function fmtNumber(x){
+  if (typeof x !== 'number') return x;
+  // prefer nice fractions if they are simple repeating thirds / sixths? (lightweight)
+  const r3 = Math.round(x*3)/3;
+  if (Math.abs(x-r3) < 1e-10) return Number(r3.toFixed(3));
+  // default 3 d.p. max
+  return Number(x.toFixed(3));
 }
-
-/*** ---------- Selection helpers ---------- ***/
-function countsFromWeights(total, weights){
-  const keys = Object.keys(weights);
-  const raw = keys.map(k => ({k, v: total*weights[k]}));
-  const base = {}; let sum = 0;
-  for (const r of raw){ base[r.k] = Math.floor(r.v); sum += base[r.k]; }
-  let rem = total - sum;
-  raw.sort((a,b)=> (b.v - Math.floor(b.v)) - (a.v - Math.floor(a.v)));
-  let i=0; while(rem>0){ base[raw[i%raw.length].k]++; rem--; i++; }
-  return base;
-}
-
-/* Select items honoring domain/diff weights and a target SPR count. */
-function selectItemsTyped(pool, total, domainWeights, diffWeights, sprTarget, seed, used){
-  const domains = Object.keys(domainWeights);
-  const diffs = Object.keys(diffWeights);
-
-  const perDomainTotal = countsFromWeights(total, domainWeights);
-  const perDomainSPR   = countsFromWeights(sprTarget, domainWeights);
-
-  const chosen = [];
-
-  let bump = 0;
-
-  // First pass: pick SPR items
-  for (const d of domains){
-    const needDom = perDomainSPR[d] || 0;
-    if (needDom <= 0) continue;
-    const perDiff = countsFromWeights(needDom, diffWeights);
-
-    for (const diff of diffs){
-      const candidates = pool.filter(x => x.domain===d && (x.difficulty||'M')===diff && !used.has(x.id) && x.__isSPR);
-      const shuf = seededShuffle(candidates, seed + ":spr:" + d + ":" + diff + ":" + (bump++));
-      for (let i=0; i<perDiff[diff] && i<shuf.length; i++){
-        chosen.push(shuf[i]); used.add(shuf[i].id);
+function generateItem(tpl, seed="demo"){
+  const rnd=makeRng(seed);
+  const {stem, params={}, derived={}, constraints=[], answer, distractors=[]}=tpl;
+  const MAX=250;
+  for(let attempt=0;attempt<MAX;attempt++){
+    const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
+    const D={}; let okDer=true; for(const[k,e] of Object.entries(derived)){ try{ D[k]=evalExpr(e,{...P,...D}); }catch{ okDer=false; break; } }
+    if(!okDer) continue;
+    let ok=true; for(const c of constraints){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } }catch{ ok=false; break; } }
+    if(!ok) continue;
+    let ans=safeEvalOrLiteral(answer,{...P,...D}); if(typeof ans==="number") ans=fmtNumber(ans);
+    const opts=[];
+    for(const d of distractors){
+      let v=safeEvalOrLiteral(d,{...P,...D,ans}); if(typeof v==="number") v=fmtNumber(v);
+      if(String(v)!==String(ans)) opts.push(v);
+    }
+    // Autopad to 3 distractors if numeric
+    if(typeof ans==="number" && opts.length<3){
+      const used=new Set([String(ans), ...opts.map(String)]);
+      const mag=Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
+      const candidates=[ans+mag, ans-mag, Math.floor(ans), Math.ceil(ans), ans*1.1, ans*0.9];
+      for(const c of candidates){ const v=fmtNumber(c); if(!used.has(String(v))){ opts.push(v); used.add(String(v)); if(opts.length>=3) break; } }
+      while(opts.length<3){
+        const delta=(0.5+rnd())*mag*(rnd()<0.5?-1:1);
+        const v=fmtNumber(ans+delta); if(!used.has(String(v))){ opts.push(v); used.add(String(v)); }
       }
     }
+    return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
   }
-
-  // Second pass: fill remaining with MC items
-  const remaining = total - chosen.length;
-  const perDomainMC = countsFromWeights(remaining, domainWeights);
-  for (const d of domains){
-    const needDom = perDomainMC[d] || 0;
-    if (needDom <= 0) continue;
-    const perDiff = countsFromWeights(needDom, diffWeights);
-
-    for (const diff of diffs){
-      const candidates = pool.filter(x => x.domain===d && (x.difficulty||'M')===diff && !used.has(x.id) && !x.__isSPR);
-      const shuf = seededShuffle(candidates, seed + ":mc:" + d + ":" + diff + ":" + (bump++));
-      for (let i=0; i<perDiff[diff] && i<shuf.length; i++){
-        chosen.push(shuf[i]); used.add(shuf[i].id);
-      }
-    }
-  }
-
-  // If still short, backfill with anything unused
-  if (chosen.length < total){
-    const any = pool.filter(x => !used.has(x.id));
-    const shuf = seededShuffle(any, seed + ":fill");
-    for (const it of shuf){ chosen.push(it); used.add(it.id); if (chosen.length >= total) break; }
-  }
-
-  return chosen.slice(0, total);
+  throw new Error("Constraint not satisfiable");
 }
 
-/*** ---------- Scoring ---------- ***/
-function sprEqual(userStr, ansRaw){
-  // parse input
-  const v = parseNumericInput(userStr);
-  if (!isNumber(v)) return false;
-  // tolerance comparison vs raw numeric answer
-  const tol = 1e-6;
-  return Math.abs(v - Number(ansRaw)) <= tol;
-}
-function scoreModule(items, responses){
-  let correct = 0;
-  items.forEach((it, idx) => {
-    const r = responses[idx];
-    if (r == null) return;
-    if (it.__isSPR){
-      if (sprEqual(r, it.__answerRaw)) correct++;
-    } else {
-      if (r === String(it.__answer)) correct++;
-    }
-  });
-  return correct;
+/* ---------- data load ---------- */
+async function loadAll(){
+  const names=Object.keys(FILES);
+  const buckets=[];
+  for(const n of names){
+    const r=await fetch(FILES[n],{cache:'no-store'});
+    if(!r.ok) throw new Error('Load failed: '+n);
+    buckets.push(await r.json());
+  }
+  return buckets.flat();
 }
 
-/*** ---------- UI state ---------- ***/
-const els = {
-  start: document.getElementById('start'),
-  runner: document.getElementById('runner'),
-  route: document.getElementById('route'),
-  results: document.getElementById('results'),
+/* ---------- build module sets ---------- */
+function seededShuffle(arr, seed){
+  const r=makeRng(seed); const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function takeByDifficulty(pool, mix, seed){
+  const groups = {E:[],M:[],H:[]};
+  for(const it of pool){ const d=(it.difficulty||'M').toUpperCase(); if(groups[d]) groups[d].push(it); }
+  return [
+    ...seededShuffle(groups.E, seed+":E").slice(0, mix.E||0),
+    ...seededShuffle(groups.M, seed+":M").slice(0, mix.M||0),
+    ...seededShuffle(groups.H, seed+":H").slice(0, mix.H||0),
+  ];
+}
 
-  moduleTimer: document.getElementById('moduleTimer'),
-  hdrTimer: document.getElementById('hdrTimer'),
-  moduleTitle: document.getElementById('moduleTitle'),
-  progress: document.getElementById('progress'),
-  reviewGrid: document.getElementById('reviewGrid'),
-  qcard: document.getElementById('qcard'),
-
-  btnStart: document.getElementById('btnStart'),
-  btnSubmit: document.getElementById('btnSubmit'),
-  btnReview: document.getElementById('btnReview'),
-  btnPrev: document.getElementById('btnPrev'),
-  btnNext: document.getElementById('btnNext'),
-  btnFlag: document.getElementById('btnFlag'),
-  btnStartM2: document.getElementById('btnStartM2'),
-  btnRestart: document.getElementById('btnRestart'),
-
-  loadJson: document.getElementById('loadJson'),
-  btnJson: document.getElementById('btnJson'),
-  btnCsv: document.getElementById('btnCsv'),
-
-  seed: document.getElementById('seed'),
-  domainPreset: document.getElementById('domainPreset'),
-
-  routeMsg: document.getElementById('routeMsg'),
-  scoreline: document.getElementById('scoreline'),
-  breakdown: document.getElementById('breakdown'),
-  reviewList: document.getElementById('reviewList')
-};
-
-let BANK = [];
-let STATE = {
-  seed: '',
-  preset: 'default',
-  usedIds: new Set(),
-
-  modIndex: 1,
-  items: [],
-  responses: [],
-  flags: [],
+/* ---------- state ---------- */
+const state = {
+  moduleNo: 1,
+  itemsM1: [],
+  itemsM2: [],
+  answers: {},          // key: "1-idx" or "2-idx"
+  review: {},           // marked for review
   cursor: 0,
-  timerId: null,
-  secondsLeft: 0,
-
-  // results
-  m1: { items: [], responses: [], correct: 0 },
-  m2: { items: [], responses: [], correct: 0, route: 'easy' }
+  timer: MODULE_TIME_SECONDS,
+  route: 'm1',
+  seed: (new Date().toISOString().slice(0,10))
 };
 
-function setVisible(section){
-  els.start.classList.add('hidden');
-  els.runner.classList.add('hidden');
-  els.route.classList.add('hidden');
-  els.results.classList.add('hidden');
-  section.classList.remove('hidden');
+/* ---------- rendering ---------- */
+function renderMath(container){
+  if(window.renderMathInElement){
+    window.renderMathInElement(container,{
+      delimiters:[
+        {left:"$$",right:"$$",display:true},
+        {left:"\\[",right:"\\]",display:true},
+        {left:"\\(",right:"\\)",display:false},
+        {left:"$",right:"$",display:false}
+      ],
+      throwOnError:false
+    });
+  }
 }
-function fmtTime(s){
-  const m = Math.floor(s/60), r = s%60;
-  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+function renderProgress(){
+  const total = (state.moduleNo===1? state.itemsM1.length : state.itemsM2.length) || 22;
+  const answered = Object.keys(state.answers).filter(k=>k.startsWith(state.moduleNo+"-") && state.answers[k]!=null && state.answers[k]!=='' ).length;
+  const pct = Math.round(100*answered/total);
+  el.prog.style.width = pct+"%";
 }
-
-/*** ---------- Render Question ---------- ***/
 function renderQuestion(){
-  const i = STATE.cursor;
-  const item = STATE.items[i];
+  const items = (state.moduleNo===1? state.itemsM1 : state.itemsM2);
+  const item = items[state.cursor];
+  el.qIndex.textContent = state.cursor+1;
+  el.qTotal.textContent = items.length;
+  el.modNo.textContent  = state.moduleNo;
+  el.routeLabel.textContent = state.moduleNo===1? 'Module 1' : (state.route==='m2h'?'Module 2 (hard)':'Module 2 (easy)');
 
-  const card = document.createElement('div');
-  card.className = 'card';
+  el.stem.innerHTML = item.stem;
+  renderMath(el.stem);
 
-  const stem = document.createElement('div');
-  stem.className = 'stem';
-  stem.innerHTML = item.__stem;
-  card.appendChild(stem);
-
-  if (item.__isSPR){
-    // free response
+  el.choices.innerHTML = '';
+  const opts = seededShuffle([item.answer, ...item.distractors], (state.seed+":"+state.moduleNo+":"+ (state.cursor+1) +":opts"));
+  if (opts.length === 0){ // free response
     const wrap = document.createElement('div');
-    wrap.className = 'free-wrap';
-    wrap.innerHTML = `
-      <input type="text" id="spr_${i}" placeholder="Enter a number or fraction (e.g., 7/9)">
-      <button class="ghost" id="clr_${i}">Clear</button>`;
-    card.appendChild(wrap);
-
-    const input = wrap.querySelector(`#spr_${i}`);
-    const prev = STATE.responses[i];
-    if (prev != null) input.value = prev;
-
-    input.addEventListener('input', () => { STATE.responses[i] = input.value; refreshProgress(); });
-    wrap.querySelector(`#clr_${i}`).addEventListener('click', () => { input.value=''; STATE.responses[i]=null; refreshProgress(); });
+    wrap.className = 'free';
+    wrap.innerHTML = `<label>Answer:</label><input id="freeInp" type="text" inputmode="decimal" autocomplete="off" />`;
+    el.choices.appendChild(wrap);
+    const key = `${state.moduleNo}-${state.cursor}`;
+    const saved = state.answers[key] ?? '';
+    document.getElementById('freeInp').value = saved;
+    document.getElementById('freeInp').addEventListener('input', (e)=>{ state.answers[key] = e.target.value.trim(); renderProgress(); });
   } else {
-    // multiple choice
-    const ul = document.createElement('ul');
-    ul.className = 'choices';
-    const opts = seededShuffle([item.__answer, ...item.__distractors], STATE.seed + ":opts:" + item.id);
-    opts.forEach((o, j) => {
-      const li = document.createElement('li');
-      li.className = 'choice';
-      const id = `q${i}_opt${j}`;
-      li.innerHTML = `<input type="radio" name="q${i}" id="${id}" value="${o}">
-                      <label for="${id}"><span class="k">${String.fromCharCode(65+j)}.</span> ${o}</label>`;
-      ul.appendChild(li);
-    });
-    card.appendChild(ul);
-
-    const prev = STATE.responses[i];
-    if (prev != null){
-      const radios = ul.querySelectorAll('input[type=radio]');
-      for (const r of radios){ if (r.value === prev) { r.checked = true; break; } }
-    }
-    ul.addEventListener('change', e => {
-      if (e.target && e.target.name === `q${i}`) {
-        STATE.responses[i] = e.target.value;
-        refreshProgress();
-      }
-    });
-  }
-
-  els.qcard.innerHTML = '';
-  els.qcard.appendChild(card);
-  renderMathInElement?.(card, { delimiters:[
-    {left:"$$",right:"$$",display:true},
-    {left:"\\[",right:"\\]",display:true},
-    {left:"\\(",right:"\\)",display:false},
-    {left:"$",right:"$",display:false}
-  ], throwOnError:false });
-}
-
-/*** ---------- Progress + Review grid ---------- ***/
-function refreshProgress(){
-  els.progress.innerHTML = '';
-  for (let i=0;i<STATE.items.length;i++){
-    const p = document.createElement('div');
-    p.className = 'pill' + (STATE.responses[i]!=null && STATE.responses[i]!==''?' ans':'') + (STATE.flags[i]?' flag':'');
-    p.textContent = i+1;
-    p.addEventListener('click', () => { STATE.cursor = i; renderQuestion(); });
-    els.progress.appendChild(p);
-  }
-
-  els.reviewGrid.innerHTML = '';
-  for (let i=0;i<STATE.items.length;i++){
-    const b = document.createElement('button');
-    b.className = 'pill' + (STATE.responses[i]!=null && STATE.responses[i]!==''?' ans':'') + (STATE.flags[i]?' flag':'');
-    b.textContent = i+1;
-    b.addEventListener('click', () => {
-      STATE.cursor = i;
-      renderQuestion();
-      els.reviewGrid.classList.add('hidden');
-    });
-    els.reviewGrid.appendChild(b);
-  }
-}
-
-/*** ---------- Module build / flow ---------- ***/
-function buildModule(kind){ // 'm1' | 'm2_easy' | 'm2_hard'
-  const bp = (kind==='m1') ? BLUEPRINT.module1 :
-             (kind==='m2_easy') ? BLUEPRINT.module2_easy : BLUEPRINT.module2_hard;
-  const preset = DOMAIN_WEIGHTS[STATE.preset] || DOMAIN_WEIGHTS.default;
-
-  // prepare selection pool with isSPR flags
-  const pool = BANK.map(x => ({
-    ...x,
-    __isSPR: (x.template && Array.isArray(x.template.distractors) && x.template.distractors.length===0)
-             || (x.template && (x.template.type==='SPR' || x.template.response==='numeric'))
-  }));
-
-  const selected = selectItemsTyped(
-    pool,
-    bp.total,
-    preset,
-    bp.diffs,
-    bp.spr,
-    STATE.seed + ":" + kind,
-    STATE.usedIds
-  );
-
-  // generate renders now (fix answers)
-  const rendered = selected.map(it => {
-    const seed = STATE.seed + ":" + kind + ":" + it.id;
-    const gen = generateItem(it.template, seed);
-    return {
-      id: it.id,
-      domain: it.domain,
-      difficulty: it.difficulty || 'M',
-      __isSPR: gen.isSPR,
-      __stem: gen.stem,
-      __answerRaw: gen.answerRaw,
-      __answer: String(gen.answer),
-      __distractors: gen.distractors.map(String)
-    };
-  });
-
-  return rendered;
-}
-
-function startModule(n){ // 1 or 2
-  STATE.modIndex = n;
-  STATE.cursor = 0;
-  STATE.responses = new Array(STATE.items.length).fill(null);
-  STATE.flags = new Array(STATE.responses.length).fill(false);
-  STATE.secondsLeft = BLUEPRINT.timeMin*60;
-  els.moduleTitle.innerHTML = `<strong>Module ${n}</strong> · ${STATE.responses.length} questions · <span class="timer" id="moduleTimer">${fmtTime(STATE.secondsLeft)}</span>`;
-  els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
-  renderQuestion();
-  refreshProgress();
-  clearInterval(STATE.timerId);
-  STATE.timerId = setInterval(() => {
-    STATE.secondsLeft--; els.moduleTimer.textContent = fmtTime(STATE.secondsLeft); els.hdrTimer.textContent = fmtTime(STATE.secondsLeft);
-    if (STATE.secondsLeft <= 0){ clearInterval(STATE.timerId); submitModule(); }
-  }, 1000);
-  setVisible(els.runner);
-}
-
-function submitModule(){
-  clearInterval(STATE.timerId);
-  const correct = scoreModule(STATE.items, STATE.responses);
-
-  if (STATE.modIndex === 1){
-    STATE.m1.items = STATE.items;
-    STATE.m1.responses = STATE.responses.slice();
-    STATE.m1.correct = correct;
-
-    const route = (correct >= BLUEPRINT.routeThreshold) ? 'hard' : 'easy';
-    STATE.m2.route = route;
-    els.routeMsg.innerHTML = `You answered <strong>${correct} / ${STATE.items.length}</strong> correctly.<br>Module 2 will use the <strong>${route.toUpperCase()}</strong> form.`;
-    setVisible(els.route);
-  } else {
-    STATE.m2.items = STATE.items;
-    STATE.m2.responses = STATE.responses.slice();
-    STATE.m2.correct = correct;
-    showResults();
-  }
-}
-
-/*** ---------- Results + Export ---------- ***/
-function csvEscape(s){ return `"${String(s).replace(/"/g,'""')}"`; }
-function buildCsv(state){
-  const rows = [['module','index','id','domain','difficulty','type','chosen','correct_answer','is_correct']];
-  function dump(mod, name){
-    mod.items.forEach((it,i)=>{
-      const chosen = mod.responses[i] ?? '';
-      const correct = it.__isSPR ? sprEqual(chosen, it.__answerRaw) : (chosen === String(it.__answer));
-      rows.push([name,i+1,it.id,it.domain,it.difficulty,it.__isSPR?'SPR':'MC',chosen,it.__answer,correct?'1':'0']);
-    });
-  }
-  dump(state.m1,'M1'); dump(state.m2,'M2');
-  return rows.map(r=>r.map(csvEscape).join(',')).join('\n');
-}
-function download(name, content, type='application/octet-stream'){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content],{type}));
-  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 500);
-}
-
-function showResults(){
-  const total = STATE.m1.items.length + STATE.m2.items.length;
-  const correct = STATE.m1.correct + STATE.m2.correct;
-
-  const routeBoost = (STATE.m2.route === 'hard') ? 30 : 0; // tiny practice-only nudge
-  const scaled = Math.round(200 + ((correct/total) * 600) + routeBoost);
-  const scaledClamped = Math.max(200, Math.min(800, scaled));
-
-  els.scoreline.innerHTML = `
-    <div><strong>Total correct:</strong> ${correct} / ${total}
-      <span class="tag">Module 2: ${STATE.m2.route.toUpperCase()}</span>
-      <span class="tag">Approx. scaled: <strong>${scaledClamped}</strong> (practice only)</span>
-    </div>`;
-
-  // breakdown
-  const add = (acc, arr, key) => { arr.forEach(x => { const k=x[key]||'—'; acc[k]=(acc[k]||0)+1; }); return acc; };
-  const domAll = add({}, STATE.m1.items.concat(STATE.m2.items), 'domain');
-  const diffAll = add({}, STATE.m1.items.concat(STATE.m2.items), 'difficulty');
-
-  let html = `<div><strong>By domain:</strong> `;
-  for (const k of Object.keys(domAll)) html += `<span class="tag">${k}: ${domAll[k]}</span> `;
-  html += `</div><div style="height:6px"></div><div><strong>By difficulty:</strong> `;
-  for (const k of Object.keys(diffAll)) html += `<span class="tag">${k}: ${diffAll[k]}</span> `;
-  html += `</div>`;
-  els.breakdown.innerHTML = html;
-
-  // review
-  const renderList = (module, name) => {
-    const wrap = document.createElement('div');
-    wrap.innerHTML = `<h3 style="margin:0 0 8px">${name} — ${module.correct}/${module.items.length} correct</h3>`;
-    module.items.forEach((it, i) => {
-      const chosen = module.responses[i] ?? '';
-      const ok = it.__isSPR ? sprEqual(chosen, it.__answerRaw) : (chosen === String(it.__answer));
-      const div = document.createElement('div');
-      div.className = 'card';
+    opts.forEach((o, i)=>{
+      const id = `opt${i}`;
+      const div = document.createElement('label');
+      div.className = 'choice';
       div.innerHTML = `
-        <div class="row">
-          <div><span class="tag">${it.domain}</span><span class="tag">${it.difficulty}</span><span class="tag">${it.__isSPR?'SPR':'MC'}</span></div>
-          <div class="spacer"></div>
-          <div class="${ok?'good':'bad'}">${ok?'Correct':'Incorrect'}</div>
-        </div>
-        <div class="stem" style="margin-top:8px">${it.__stem}</div>
-        <div class="k" style="margin-top:8px"><strong>Answer:</strong> ${it.__answer}</div>`;
-      wrap.appendChild(div);
+        <input type="radio" name="opt" id="${id}" value="${o}">
+        <div>${o}</div>
+      `;
+      el.choices.appendChild(div);
     });
-    return wrap;
-  };
-  els.reviewList.innerHTML = '';
-  els.reviewList.appendChild(renderList(STATE.m1, 'Module 1'));
-  els.reviewList.appendChild(renderList(STATE.m2, 'Module 2'));
+    // restore
+    const key = `${state.moduleNo}-${state.cursor}`;
+    const saved = state.answers[key];
+    if(saved!=null){
+      [...el.choices.querySelectorAll('input[type=radio]')].forEach(r=>{
+        if(String(r.value)===String(saved)) r.checked = true;
+      });
+    }
+    el.choices.addEventListener('change', (e)=>{
+      if(e.target && e.target.name==='opt'){
+        state.answers[`${state.moduleNo}-${state.cursor}`] = e.target.value;
+        renderProgress();
+      }
+    }, {once:true});
+  }
 
-  // export buttons
-  els.btnJson.onclick = () => {
-    const exportObj = { meta:{seed:STATE.seed,preset:STATE.preset,route:STATE.m2.route}, state:STATE };
-    download(`sat-math-results-${STATE.seed}.json`, JSON.stringify(exportObj,null,2), 'application/json');
-  };
-  els.btnCsv.onclick = async () => {
-    const csv = buildCsv(STATE);
-    await navigator.clipboard.writeText(csv);
-    els.breakdown.textContent = 'CSV copied to clipboard.';
-    setTimeout(()=>{ els.breakdown.textContent=''; }, 1500);
-  };
-
-  setVisible(els.results);
+  // mark for review toggle
+  const mk = state.review[`${state.moduleNo}-${state.cursor}`] || false;
+  el.mark.checked = mk;
+  el.mark.oninput = () => { state.review[`${state.moduleNo}-${state.cursor}`] = el.mark.checked; };
+}
+function renderTimer(){
+  const t = Math.max(0, state.timer);
+  const m = Math.floor(t/60), s = t%60;
+  el.timer.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-/*** ---------- Handlers ---------- ***/
-const ui = {
-  startM1: async () => {
-    if (!BANK.length) BANK = await loadAllBanks();
-
-    STATE.seed = els.seed.value || new Date().toISOString().slice(0,10);
-    STATE.preset = els.domainPreset.value || 'default';
-    STATE.usedIds = new Set();
-
-    // build module 1
-    const bp = BLUEPRINT.module1;
-    STATE.items = buildModule('m1');
-    // ensure UI knows length before starting timer
-    STATE.responses = new Array(STATE.items.length).fill(null);
-    STATE.flags = new Array(STATE.items.length).fill(false);
-    startModule(1);
+/* ---------- navigation ---------- */
+el.back.onclick = ()=>{
+  if(state.cursor>0){ state.cursor--; renderQuestion(); }
+};
+el.next.onclick = ()=>{
+  const items = (state.moduleNo===1? state.itemsM1 : state.itemsM2);
+  if(state.cursor < items.length-1){
+    state.cursor++; renderQuestion();
+  }else{
+    // End of module
+    if(state.moduleNo===1){
+      // route
+      const correct = gradeModule(1).raw;
+      state.route = (correct >= ROUTE_THRESHOLD) ? 'm2h' : 'm2e';
+      startModule2();
+    }else{
+      // finished test -> show score
+      const g1 = gradeModule(1), g2 = gradeModule(2);
+      const total = g1.raw + g2.raw;
+      alert(`Module 1: ${g1.raw}/${state.itemsM1.length}\nModule 2: ${g2.raw}/${state.itemsM2.length}\n\nTotal correct: ${total}/44`);
+    }
   }
 };
 
-els.btnStart.addEventListener('click', ui.startM1);
-els.btnSubmit.addEventListener('click', () => submitModule());
-els.btnReview.addEventListener('click', () => els.reviewGrid.classList.toggle('hidden'));
-els.btnPrev.addEventListener('click', () => { if (STATE.cursor>0){ STATE.cursor--; renderQuestion(); }});
-els.btnNext.addEventListener('click', () => { if (STATE.cursor<STATE.items.length-1){ STATE.cursor++; renderQuestion(); }});
-els.btnFlag.addEventListener('click', () => { STATE.flags[STATE.cursor] = !STATE.flags[STATE.cursor]; refreshProgress(); });
+/* ---------- grading ---------- */
+function gradeModule(n){
+  const items = (n===1? state.itemsM1 : state.itemsM2);
+  let raw = 0;
+  items.forEach((it, idx)=>{
+    const ans = state.answers[`${n}-${idx}`];
+    if(ans==null || ans==='') return;
+    if(String(ans)===String(it.answer)) raw++;
+  });
+  return {raw};
+}
 
-els.btnStartM2.addEventListener('click', () => {
-  const kind = (STATE.m2.route==='hard') ? 'm2_hard' : 'm2_easy';
-  STATE.items = buildModule(kind);
-  STATE.responses = new Array(STATE.items.length).fill(null);
-  STATE.flags = new Array(STATE.items.length).fill(false);
-  startModule(2);
+/* ---------- module lifecycle ---------- */
+let tickHandle=null;
+function startTimer(){
+  stopTimer();
+  state.timer = MODULE_TIME_SECONDS;
+  renderTimer();
+  tickHandle = setInterval(()=>{
+    state.timer--;
+    renderTimer();
+    if(state.timer<=0){
+      clearInterval(tickHandle);
+      // auto-advance end of module
+      if(state.moduleNo===1) {
+        const correct = gradeModule(1).raw;
+        state.route = (correct >= ROUTE_THRESHOLD) ? 'm2h' : 'm2e';
+        startModule2();
+      } else {
+        const g1 = gradeModule(1), g2 = gradeModule(2);
+        const total = g1.raw + g2.raw;
+        alert(`Time!\n\nModule 1: ${g1.raw}/${state.itemsM1.length}\nModule 2: ${g2.raw}/${state.itemsM2.length}\n\nTotal correct: ${total}/44`);
+      }
+    }
+  }, 1000);
+}
+function stopTimer(){ if(tickHandle) clearInterval(tickHandle); }
+
+async function startModule1(){
+  el.routeLabel.textContent = 'Module 1';
+  state.moduleNo = 1;
+  state.cursor = 0;
+
+  const all = await loadAll();
+  // stable but seeded
+  const allShuf = seededShuffle(all, state.seed+":all");
+  state.itemsM1 = takeByDifficulty(allShuf, MIX.m1, state.seed+":m1")
+    .map((it, i)=> genVariant(it, "m1:"+it.id));
+
+  el.qTotal.textContent = state.itemsM1.length;
+  renderQuestion();
+  renderProgress();
+  startTimer();
+}
+function startModule2(){
+  stopTimer();
+  state.moduleNo = 2;
+  state.cursor = 0;
+  el.modNo.textContent = 2;
+
+  el.routeLabel.textContent = (state.route==='m2h'?'Module 2 (hard)':'Module 2 (easy)');
+
+  loadAll().then(all=>{
+    const mix = (state.route==='m2h'? MIX.m2_hard : MIX.m2_easy);
+    const pool = seededShuffle(all, state.seed+":m2pool");
+    state.itemsM2 = takeByDifficulty(pool, mix, state.seed+":m2")
+      .map((it,i)=> genVariant(it, "m2:"+it.id));
+    el.qTotal.textContent = state.itemsM2.length;
+    renderQuestion();
+    renderProgress();
+    startTimer();
+  });
+}
+
+/* generate concrete variant now so we freeze params/answers */
+function genVariant(item, seed){
+  const g = generateItem(item.template, seed);
+  return { id:item.id, stem:g.stem, answer:g.answer, distractors:g.distractors, difficulty:item.difficulty||'M' };
+}
+
+/* ---------- calculator + reference modals ---------- */
+function show(elm){ elm.style.display='flex'; elm.setAttribute('aria-hidden','false'); }
+function hide(elm){ elm.style.display='none'; elm.setAttribute('aria-hidden','true'); }
+
+el.calcBtn.onclick = ()=> show(el.calcModal);
+el.refBtn.onclick  = ()=> show(el.refModal);
+el.closeCalc.onclick = ()=> hide(el.calcModal);
+el.closeRef.onclick  = ()=> hide(el.refModal);
+el.calcModal.addEventListener('click', e=>{ if(e.target===el.calcModal) hide(el.calcModal); });
+el.refModal.addEventListener('click',  e=>{ if(e.target===el.refModal) hide(el.refModal); });
+document.querySelectorAll('#calcModal .tab').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('#calcModal .tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const which = btn.dataset.tab;
+    document.getElementById('calcG').style.display = (which==='g')?'block':'none';
+    document.getElementById('calcS').style.display = (which==='s')?'block':'none';
+  };
 });
 
-els.btnRestart.addEventListener('click', () => setVisible(els.start));
-
-els.loadJson.addEventListener('change', async (e) => {
-  const file = e.target.files?.[0]; if (!file) return;
-  const text = await file.text();
-  try {
-    const data = JSON.parse(text);
-    if (!data || !data.state) throw new Error('Bad file format');
-    STATE = data.state;
-    showResults();
-  } catch(err) {
-    alert('Could not load results JSON: ' + err.message);
-  }
-});
-
-/*** ---------- Boot ---------- ***/
-setVisible(els.start);
+/* ---------- boot ---------- */
+function boot(){
+  renderTimer();
+  startModule1();
+  // keyboard helpers
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') el.next.click();
+    if(e.key==='ArrowLeft')  el.back.click();
+  });
+}
+boot();
 </script>
 </body>
 </html>
