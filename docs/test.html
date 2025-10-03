@@ -7,35 +7,19 @@
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --cb-blue:#1f4db5;        /* College Board-ish blue */
-    --cb-blue-600:#113a92;
-    --cb-blue-100:#eaf0ff;
-    --ink:#0b1020;
-    --bg:#f7f9ff;
-    --card:#ffffff;
-    --muted:#66759a;
-    --ok:#0a7c3b;
-    --bad:#c4322b;
+    --cb-blue:#1f4db5; --cb-blue-600:#113a92; --cb-blue-100:#eaf0ff;
+    --ink:#0b1020; --bg:#f7f9ff; --card:#ffffff; --muted:#66759a;
+    --ok:#0a7c3b; --bad:#c4322b;
   }
   html,body{margin:0;height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
   header.topbar{
-    background:var(--cb-blue);
-    color:#fff;
-    padding:10px 16px;
-    display:flex;
-    align-items:center;
-    gap:16px;
-    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08);
-    position:sticky; top:0; z-index:20;
+    background:var(--cb-blue); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px;
+    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08); position:sticky; top:0; z-index:20;
   }
   .brand{font-weight:700}
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
   .spacer{flex:1}
-  .controls{display:flex; gap:8px}
-  .btn{
-    background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue);
-    font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;
-  }
+  .btn{background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue); font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;}
   .btn.secondary{background:transparent;color:#fff;border-color:#fff}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   main{max-width:1050px; margin:16px auto; padding:0 16px 40px}
@@ -47,14 +31,10 @@
   .choice{border:1px solid #cfe0ff; border-radius:12px; padding:12px; background:#fff; cursor:pointer; display:flex; align-items:center; gap:12px}
   .choice:hover{border-color:var(--cb-blue)}
   .choice input{accent-color:var(--cb-blue)}
-  .ansarea{display:flex; align-items:center; gap:10px; margin-top:14px}
   .nav{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
   .tiny{font-size:13px; color:var(--muted)}
   .status{margin:10px 0; color:var(--muted)}
-  .green{color:var(--ok)}
-  .red{color:var(--bad)}
-
-  /* Pop-out windows (calculator / reference) */
+  .green{color:var(--ok)} .red{color:var(--bad)}
   .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
        border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
   .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
@@ -66,7 +46,6 @@
   .dock{display:flex; gap:10px}
   .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
   .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
-
   .chip{padding:2px 8px;border-radius:999px;background:var(--cb-blue-100); border:1px solid #cfe0ff; color:#143b8d; font-weight:600}
 </style>
 </head>
@@ -122,7 +101,6 @@
 <div id="popCalc" class="pop" aria-modal="true">
   <div class="head" data-drag="calc"><span>Desmos Calculator</span><button class="x" data-close="calc">✕</button></div>
   <div class="body">
-    <!-- The “test mode” SAT calculator. Expressions panel is available inside the pop-out. -->
     <iframe class="calc-iframe"
       src="https://www.desmos.com/test-mode?lang=en&mode=sat&embed"
       title="Desmos SAT Calculator"></iframe>
@@ -138,21 +116,29 @@
 
 <script>
 /* ------------------------------------------------------------------ */
-/* Small helpers: seeded RNG, math-eval, generator with formatting     */
+/* Helpers (seeded RNG + safe rendering)                               */
 /* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
+// escape only for places we must inject HTML (review/summary); elsewhere use textContent.
+function escapeHTML(s){
+  return String(s??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 function seededShuffle(arr, seed){
-  const rnd = makeRng(seed);
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
-  return a;
+  const rnd = makeRng(seed); const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;
 }
 
 function pick(spec,rnd){
@@ -182,16 +168,12 @@ function safeEvalOrLiteral(expr,scope){
     return expr;
   }catch{ return expr; }
 }
-
-/* Formatting: keep template.format support; else global default rounding to 3 decimals (no trailing zero spam). */
 function formatNumber(x,fmt){
   if(typeof x!=='number' || !isFinite(x)) return x;
   if(fmt && fmt.fixed!=null) return Number(x.toFixed(+fmt.fixed));
   if(fmt && fmt.round!=null){ const p=Math.pow(10,+fmt.round); return Math.round(x*p)/p; }
-  // global default: 3 decimals max
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
-
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
@@ -211,7 +193,6 @@ function generateItem(template, seed='demo'){
       let v = formatNumber(safeEvalOrLiteral(d,{...P,...D,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
-    // Ensure 4 choices total for numeric answers.
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -235,21 +216,12 @@ function generateItem(template, seed='demo'){
 /* ------------------------------------------------------------------ */
 /* Data loading + session seed                                         */
 /* ------------------------------------------------------------------ */
-const FILES={
-  HOA:'data/MASTER_HOA_SAT.json',
-  PAM:'data/MASTER_PAM_SAT.json',
-  PSDA:'data/MASTER_PSDA_SAT.json',
-  GEOT:'data/MASTER_GEOT_SAT.json'
-};
-const REFERENCE_IMG = 'data/sat-reference.jpg'; /* put your image here */
+const FILES={ HOA:'data/MASTER_HOA_SAT.json', PAM:'data/MASTER_PAM_SAT.json', PSDA:'data/MASTER_PSDA_SAT.json', GEOT:'data/MASTER_GEOT_SAT.json' };
+const REFERENCE_IMG = 'data/sat-reference.jpg';
 
 const qs=new URLSearchParams(location.search);
-const sessionSeed = qs.get('seed') || (()=>{
-  try{const a=new Uint32Array(2); crypto.getRandomValues(a); return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);}
-  catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);}
-})();
+const sessionSeed = qs.get('seed') || (()=>{ try{const a=new Uint32Array(2); crypto.getRandomValues(a); return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);} catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);} })();
 if(!qs.get('seed')){ qs.set('seed', sessionSeed); history.replaceState(null,'',location.pathname+'?'+qs.toString()); }
-
 document.getElementById('seedEcho').textContent='Seed: '+sessionSeed;
 
 async function loadAll(){
@@ -267,28 +239,14 @@ async function loadAll(){
 /* ------------------------------------------------------------------ */
 /* Test engine                                                         */
 /* ------------------------------------------------------------------ */
-const MODULE_TIME = 35*60; // 35 minutes
-const BRANCH_THRESHOLD = 14; // >=14 correct -> Hard
-
-const BLUEPRINT = {
-  M1: {E:7, M:10, H:5},
-  M2easy: {E:9, M:11, H:2},
-  M2hard: {E:3, M:12, H:7}
-};
+const MODULE_TIME = 35*60;           // 35 minutes
+const BRANCH_THRESHOLD = 14;         // >=14 correct -> Hard
+const BLUEPRINT = { M1:{E:7,M:10,H:5}, M2easy:{E:9,M:11,H:2}, M2hard:{E:3,M:12,H:7} };
 
 let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
 
-let state={
-  module:1,
-  items:[],     // raw templates selected (module scope)
-  gens:[],      // generated items (with numbers)
-  answers:new Map(), // qIndex -> answer string
-  idx:0,
-  timer:null,
-  remaining:MODULE_TIME,
-  route:'easy'  // for module 2
-};
+let state={ module:1, items:[], gens:[], answers:new Map(), idx:0, timer:null, remaining:MODULE_TIME, route:'easy' };
 
 function splitByDifficulty(all){
   return {
@@ -297,7 +255,6 @@ function splitByDifficulty(all){
     H: all.filter(x=>(x.difficulty||'M')==='H'),
   };
 }
-
 function takeUnique(arr, n, tag){
   const rnd=makeRng(tag);
   const a = arr.filter(x=>!usedIds.has(x.id));
@@ -305,7 +262,6 @@ function takeUnique(arr, n, tag){
   for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
   return sh.slice(0, n);
 }
-
 function buildModule(which, branchTag){
   const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
   const tagBase = `m${which}:${branchTag}:${sessionSeed}`;
@@ -313,13 +269,10 @@ function buildModule(which, branchTag){
   const pickM = takeUnique(pool.M, bp.M, tagBase+':M');
   const pickH = takeUnique(pool.H, bp.H, tagBase+':H');
   const items=[...pickE, ...pickM, ...pickH];
-  // Shuffle overall order so Q1 isn't predictable
   const ordered = seededShuffle(items, tagBase+':order');
-  // Mark used
   ordered.forEach(it=>{ if(it.id) usedIds.add(it.id); });
   return ordered;
 }
-
 function generateModuleItems(items, which, branchTag){
   const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
   return items.map((it,i)=> generateItem(it.template, `${seedBase}:${it.id||i}`));
@@ -353,24 +306,33 @@ function show(idx){
   document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
   document.getElementById('qMeta').textContent = (t.domain? t.domain+' • ':'') + (t.subtopic||'');
   document.getElementById('qDiff').textContent = t.difficulty || 'M';
+  // STEM: use textContent (safe literal)
   document.getElementById('qStem').textContent = g.stem;
 
+  // Build choices without innerHTML so f(x), <x>, etc. render literally
   const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
   const chosen = state.answers.get(state.idx) ?? null;
   const wrap = document.getElementById('qChoices');
   wrap.innerHTML='';
   opts.forEach((o,i)=>{
     const id=`opt${state.idx}_${i}`;
-    const div=document.createElement('label');
-    div.className='choice';
-    div.innerHTML = `<input type="radio" name="q${state.idx}" id="${id}" value="${String(o)}"> <span>${String(o)}</span>`;
-    const input = div.querySelector('input');
+    const label=document.createElement('label');
+    label.className='choice';
+
+    const input=document.createElement('input');
+    input.type='radio'; input.name=`q${state.idx}`; input.id=id; input.value=String(o);
+
+    const span=document.createElement('span');
+    span.textContent = String(o);
+
     if(chosen!==null && String(chosen)===String(o)) input.checked=true;
     input.addEventListener('change',()=> state.answers.set(state.idx, String(o)) );
-    wrap.appendChild(div);
+
+    label.appendChild(input);
+    label.appendChild(span);
+    wrap.appendChild(label);
   });
 
-  // nav buttons
   document.getElementById('btnPrev').disabled = state.idx===0;
   const last = state.idx===total-1;
   document.getElementById('btnNext').style.display = last? 'none': '';
@@ -399,47 +361,100 @@ function submitModule(){
     ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
     : state.route;
 
-  let html = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>`;
-  html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
-  html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
+  const container = document.getElementById('summary');
+  container.innerHTML = '';
+
+  const h2=document.createElement('h2');
+  h2.style.margin='0 0 6px';
+  h2.textContent=`Module ${state.module} complete`;
+  container.appendChild(h2);
+
+  const p=document.createElement('p');
+  p.innerHTML=`<strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}`;
+  container.appendChild(p);
+
+  const seedP=document.createElement('p');
+  seedP.className='tiny';
+  seedP.innerHTML=`Seed: <code>${escapeHTML(sessionSeed)}</code>`;
+  container.appendChild(seedP);
 
   if(state.module===1){
-    html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
-    html += `<div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`;
-  } else {
-    html += `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
-             <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`;
-  }
+    const alert=document.createElement('div');
+    alert.className='alert';
+    alert.style.marginTop='10px';
+    alert.innerHTML=`Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).`;
+    container.appendChild(alert);
 
-  document.getElementById('summary').innerHTML = html;
+    const wrap=document.createElement('div');
+    wrap.style.marginTop='12px';
+    const btn=document.createElement('button');
+    btn.id='btnBeginM2'; btn.className='btn'; btn.textContent='Begin Module 2';
+    wrap.appendChild(btn);
+    container.appendChild(wrap);
 
-  if(state.module===1){
     state.route = branch;
-    document.getElementById('btnBeginM2').onclick = () => beginModule2();
-  }else{
-    document.getElementById('btnNew').onclick = ()=>{
+    btn.onclick = () => beginModule2();
+  } else {
+    const wrap=document.createElement('div');
+    wrap.style.marginTop='12px';
+    const btnNew=document.createElement('button');
+    btnNew.id='btnNew'; btnNew.className='btn'; btnNew.textContent='New Test (new seed)';
+    const btnRev=document.createElement('button');
+    btnRev.id='btnReview'; btnRev.className='btn'; btnRev.style.marginLeft='8px'; btnRev.textContent='Review answers';
+    wrap.appendChild(btnNew); wrap.appendChild(btnRev);
+    container.appendChild(wrap);
+
+    btnNew.onclick = ()=>{
       const u=new URL(location.href);
-      u.searchParams.delete('seed'); location.href=u.toString(); // new random seed
+      u.searchParams.delete('seed'); location.href=u.toString();
     };
-    document.getElementById('btnReview').onclick = ()=> reviewAnswers();
+    btnRev.onclick = ()=> reviewAnswers();
   }
 }
 
 function reviewAnswers(){
-  // simple review: re-show module 2 with correct/incorrect marking
   const sum = document.getElementById('summary');
-  let html = `<h2 style="margin:0 0 8px;">Module 2 — Review</h2>`;
+  sum.style.display='';
+  sum.innerHTML = '';
+
+  const h2=document.createElement('h2');
+  h2.style.margin='0 0 8px';
+  h2.textContent='Module 2 — Review';
+  sum.appendChild(h2);
+
   state.gens.forEach((g,i)=>{
     const your = state.answers.get(i);
     const ok = String(your)===String(g.answer);
-    html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
-      <div class="tiny">Q ${i+1}</div>
-      <div>${g.stem}</div>
-      <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${your??'—'} • Correct: ${g.answer}</div>
-    </div>`;
+
+    const block=document.createElement('div');
+    block.style.cssText='padding:10px 0;border-top:1px solid #eef3ff';
+
+    const tiny=document.createElement('div');
+    tiny.className='tiny';
+    tiny.textContent=`Q ${i+1}`;
+    block.appendChild(tiny);
+
+    const stem=document.createElement('div');
+    stem.textContent = g.stem;            // literal
+    block.appendChild(stem);
+
+    const line=document.createElement('div');
+    line.className='tiny ' + (ok?'green':'red');
+    line.style.marginTop='6px';
+    line.textContent = `Your answer: ${your??'—'} • Correct: ${g.answer}`;
+    block.appendChild(line);
+
+    sum.appendChild(block);
   });
-  html += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
-  sum.innerHTML = html;
+
+  const btnWrap=document.createElement('div');
+  btnWrap.style.marginTop='12px';
+  const back=document.createElement('button');
+  back.className='btn';
+  back.textContent='Back';
+  back.onclick = ()=> location.reload();
+  btnWrap.appendChild(back);
+  sum.appendChild(btnWrap);
 }
 
 async function beginModule1(){
@@ -503,17 +518,16 @@ function enableDrag(popId){
   window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; pop.style.left=(sl+dx)+'px'; pop.style.top=(st+dy)+'px'; pop.style.right='auto'; pop.style.bottom='auto'; });
   window.addEventListener('mouseup', ()=> dragging=false);
 }
-
 enableDrag('popCalc'); enableDrag('popRef');
-document.getElementById('btnCalc').onclick=()=>{ const p=document.getElementById('popCalc'); p.style.display='block'; };
-document.getElementById('btnRef').onclick =()=>{ const p=document.getElementById('popRef');  p.style.display='block'; };
+
+document.getElementById('btnCalc').onclick=()=>{ document.getElementById('popCalc').style.display='block'; };
+document.getElementById('btnRef').onclick =()=>{ document.getElementById('popRef').style.display='block'; };
 document.querySelector('[data-close="calc"]').onclick=()=>document.getElementById('popCalc').style.display='none';
 document.querySelector('[data-close="ref"]').onclick =()=>document.getElementById('popRef').style.display='none';
 
 // load reference image
 document.getElementById('refImg').src = REFERENCE_IMG;
 document.getElementById('refImg').onerror = function(){ this.alt='Reference sheet image not found at '+REFERENCE_IMG; };
-
 </script>
 </body>
 </html>
