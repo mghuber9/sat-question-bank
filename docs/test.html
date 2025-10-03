@@ -1,338 +1,519 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>SAT Practice — Math</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:,">
+<meta charset="utf-8" />
+<title>SAT Math — Adaptive Practice (2 Modules)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --cb-blue:#1f4db5;        /* College Board-ish blue */
+    --cb-blue-600:#113a92;
+    --cb-blue-100:#eaf0ff;
+    --ink:#0b1020;
+    --bg:#f7f9ff;
+    --card:#ffffff;
+    --muted:#66759a;
+    --ok:#0a7c3b;
+    --bad:#c4322b;
+  }
+  html,body{margin:0;height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
+  header.topbar{
+    background:var(--cb-blue);
+    color:#fff;
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-weight:700}
+  .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
+  .spacer{flex:1}
+  .controls{display:flex; gap:8px}
+  .btn{
+    background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue);
+    font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;
+  }
+  .btn.secondary{background:transparent;color:#fff;border-color:#fff}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  main{max-width:1050px; margin:16px auto; padding:0 16px 40px}
+  .card{background:var(--card); border:1px solid #dfe6ff; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(31,77,181,.08)}
+  .row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .qnum{background:var(--cb-blue-100); color:var(--cb-blue); border:1px solid var(--cb-blue); padding:4px 8px; border-radius:10px; font-weight:700}
+  .stem{font-size:18px; margin:10px 0 12px}
+  .choices{display:grid; gap:10px; margin-top:8px}
+  .choice{border:1px solid #cfe0ff; border-radius:12px; padding:12px; background:#fff; cursor:pointer; display:flex; align-items:center; gap:12px}
+  .choice:hover{border-color:var(--cb-blue)}
+  .choice input{accent-color:var(--cb-blue)}
+  .ansarea{display:flex; align-items:center; gap:10px; margin-top:14px}
+  .nav{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
+  .tiny{font-size:13px; color:var(--muted)}
+  .status{margin:10px 0; color:var(--muted)}
+  .green{color:var(--ok)}
+  .red{color:var(--bad)}
 
-  <!-- KaTeX -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  /* Pop-out windows (calculator / reference) */
+  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
+       border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
+  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
+             display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
+  .pop .body{height:calc(100% - 42px); background:#fff; border-radius:0 0 14px 14px; overflow:hidden}
+  .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
+  .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
+  .calc-iframe{width:100%; height:100%; border:0}
+  .dock{display:flex; gap:10px}
+  .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
+  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
 
-  <!-- Desmos API -->
-  <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
-
-  <style>
-    :root{
-      --blue-900:#163d86; --blue-800:#1f4fa7; --blue-700:#2a66cf; --blue-100:#e8f1ff;
-      --text:#0f172a; --muted:#486080; --card:#fff; --bg:#f6f8fc; --border:#d8e1f1; --shadow:0 2px 10px rgba(15,23,42,.08);
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-
-    .top{position:sticky;top:0;z-index:50;background:var(--blue-900);color:#fff;box-shadow:var(--shadow)}
-    .top .row{display:flex;align-items:center;gap:16px;padding:10px 16px}
-    .brand{font-weight:700;letter-spacing:.2px}
-    .gutter{flex:1}
-    .pill{background:rgba(255,255,255,.12);padding:6px 10px;border-radius:999px}
-    .btn{background:var(--blue-700);color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
-    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,.5)}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .timer{min-width:78px;text-align:center;font-variant-numeric:tabular-nums}
-
-    .wrap{max-width:980px;margin:18px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
-    .qhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-    .qnum{background:var(--blue-100);border:1px solid var(--border);color:var(--blue-900);width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-weight:700}
-    .stem{font-size:17px}
-    .choices{margin-top:12px;display:grid;gap:8px}
-    .choice{border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;background:#fff}
-    .choice:hover{border-color:var(--blue-700)}
-    .choice.selected{outline:2px solid var(--blue-700)}
-    .constructed{display:flex;gap:10px;align-items:center;margin-top:10px}
-    .constructed input{padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px}
-    .nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:10px}
-    .muted{color:var(--muted)}
-
-    .tool-window{
-      position:fixed;left:40px;top:90px;width:520px;background:#fff;border:1px solid var(--border);
-      border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.18);display:none;flex-direction:column;z-index:60;
-    }
-    .tool-window.active{display:flex}
-    .titlebar{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:10px 12px;background:var(--blue-800);color:#fff;border-radius:12px 12px 0 0;
-      cursor:grab;user-select:none;
-    }
-    .titlebar:active{cursor:grabbing}
-    .titlebar h3{margin:0;font-size:14px;font-weight:700;letter-spacing:.2px}
-    .tool-actions{display:flex;gap:6px}
-    .tiny{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer}
-    .tiny:hover{background:rgba(255,255,255,.25)}
-    .content{padding:0;background:#fff;border-radius:0 0 12px 12px}
-    .tabs{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--border)}
-    .tab{padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer}
-    .tab.active{background:var(--blue-100);border-color:var(--blue-700);color:var(--blue-900);font-weight:600}
-
-    /* WIDER calc + taller area */
-    #calcWin{width:820px;}
-    @media (max-width:900px){ #calcWin{width:94vw;} }
-    .calc-holder{height:520px;padding:0 10px 10px}
-    .calc-canvas{width:100%;height:100%;border:0;border-radius:0 0 12px 12px}
-
-    .ref-wrap{padding:12px}
-    .ref-img{width:100%;height:auto;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
-  </style>
+  .chip{padding:2px 8px;border-radius:999px;background:var(--cb-blue-100); border:1px solid #cfe0ff; color:#143b8d; font-weight:600}
+</style>
 </head>
 <body>
 
-  <div class="top">
+<header class="topbar">
+  <div class="brand">Math Practice — 2 Module Adaptive</div>
+  <div id="hdrModule" class="pill">Module 1</div>
+  <div id="hdrTimer" class="pill">35:00</div>
+  <div class="spacer"></div>
+  <div class="dock">
+    <button id="btnRef" class="btn">Reference</button>
+    <button id="btnCalc" class="btn">Calculator</button>
+  </div>
+  <button id="btnCopy" class="btn secondary" title="Copy link to this exact test (same seed)">Copy link</button>
+</header>
+
+<main>
+  <div id="status" class="status"></div>
+
+  <div id="intro" class="card">
+    <h2 style="margin:0 0 6px;">Welcome</h2>
+    <p class="tiny">Two adaptive modules • 22 questions each • 35 minutes per module. A new random session seed is created
+      every time you open this page (unless you include <code>?seed=</code> in the URL).</p>
+    <div style="margin-top:10px">
+      <button id="btnStart" class="btn">Start Module 1</button>
+      <span id="seedEcho" class="tiny" style="margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <div id="qCard" class="card" style="display:none">
     <div class="row">
-      <div class="brand">Section 1 — Math</div>
-      <div class="pill timer" id="timer">35:00</div>
-      <div class="gutter"></div>
-      <button class="btn secondary" id="btnRef">Reference</button>
-      <button class="btn" id="btnCalc">Calculator</button>
+      <div id="qNum" class="qnum">Q 1</div>
+      <div id="qMeta" class="tiny"></div>
+      <div class="spacer"></div>
+      <div id="qDiff" class="chip">E</div>
+    </div>
+    <div id="qStem" class="stem">Loading…</div>
+    <div id="qChoices" class="choices"></div>
+
+    <div class="nav">
+      <button id="btnPrev" class="btn">Back</button>
+      <div class="spacer"></div>
+      <button id="btnNext" class="btn">Next</button>
+      <button id="btnSubmitModule" class="btn" style="display:none">Submit Module</button>
     </div>
   </div>
 
-  <main class="wrap">
-    <div class="card" id="statusCard"><div class="muted" id="status">Loading module…</div></div>
+  <div id="summary" class="card" style="display:none"></div>
+</main>
 
-    <div class="card" id="qCard" style="display:none">
-      <div class="qhead">
-        <div class="qnum" id="qNum">1</div>
-        <div class="muted" id="qLoc">Question 1 of 22</div>
-      </div>
-      <div class="stem" id="stem">—</div>
-
-      <div id="mcWrap" class="choices" style="display:none"></div>
-
-      <div id="crWrap" class="constructed" style="display:none">
-        <label for="crInput" class="muted">Answer:</label>
-        <input id="crInput" type="text" inputmode="decimal" autocomplete="off" />
-      </div>
-
-      <div class="nav">
-        <button class="btn secondary" id="prevBtn">Back</button>
-        <div class="muted" id="navStatus">—</div>
-        <button class="btn" id="nextBtn">Next</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Calculator window -->
-  <div id="calcWin" class="tool-window" style="left:40px;top:110px;">
-    <div class="titlebar" data-handle>
-      <h3>Calculator</h3>
-      <div class="tool-actions">
-        <a class="tiny" target="_blank" rel="noopener" href="https://www.desmos.com/calculator?lang=en">Pop out ↗</a>
-        <button class="tiny" data-close aria-label="Close">✕</button>
-      </div>
-    </div>
-    <div class="content">
-      <div class="tabs">
-        <button class="tab active" data-tab="graph">Graphing</button>
-        <button class="tab" data-tab="sci">Scientific</button>
-      </div>
-      <div class="calc-holder">
-        <div id="graphCalc" class="calc-canvas"></div>
-        <div id="sciCalc" class="calc-canvas" style="display:none"></div>
-      </div>
-    </div>
+<!-- Pop-outs -->
+<div id="popCalc" class="pop" aria-modal="true">
+  <div class="head" data-drag="calc"><span>Desmos Calculator</span><button class="x" data-close="calc">✕</button></div>
+  <div class="body">
+    <!-- The “test mode” SAT calculator. Expressions panel is available inside the pop-out. -->
+    <iframe class="calc-iframe"
+      src="https://www.desmos.com/test-mode?lang=en&mode=sat&embed"
+      title="Desmos SAT Calculator"></iframe>
   </div>
+</div>
 
-  <!-- Reference window -->
-  <div id="refWin" class="tool-window" style="width:760px;left:120px;top:160px;">
-    <div class="titlebar" data-handle>
-      <h3>Reference Sheet</h3>
-      <div class="tool-actions"><button class="tiny" data-close aria-label="Close">✕</button></div>
-    </div>
-    <div class="content">
-      <div class="ref-wrap">
-        <!-- We'll set src via JS with fallbacks -->
-        <img id="refImg" class="ref-img" alt="SAT Math Reference Sheet">
-      </div>
-    </div>
+<div id="popRef" class="pop" aria-modal="true" style="width:760px;height:520px; right:560px;">
+  <div class="head" data-drag="ref"><span>Reference Sheet</span><button class="x" data-close="ref">✕</button></div>
+  <div class="body" style="padding:8px; background:#fff">
+    <img id="refImg" class="ref-img" alt="SAT Math Reference Sheet">
   </div>
+</div>
 
 <script>
-/* Error surface */
-window.addEventListener('error', e => {
-  const s = document.getElementById('status');
-  if (s) s.textContent = '⚠️ Script error: ' + (e.error?.message || e.message || 'unknown');
+/* ------------------------------------------------------------------ */
+/* Small helpers: seeded RNG, math-eval, generator with formatting     */
+/* ------------------------------------------------------------------ */
+window.addEventListener('error', e=>{
+  const el=document.getElementById('status');
+  if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
-/* Draggable windows (titlebar only) */
-function makeDraggable(win){
-  const handle = win.querySelector('[data-handle]');
-  let startX=0,startY=0,startL=0,startT=0,dragging=false,moved=false,zTop=60;
-  const THRESH=3;
-  function onDown(e){ if(e.button!==0) return;
-    dragging=true; moved=false;
-    const r=win.getBoundingClientRect();
-    startX=e.clientX; startY=e.clientY; startL=r.left; startT=r.top;
-    win.style.zIndex=(++zTop).toString();
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    e.preventDefault();
-  }
-  function onMove(e){
-    if(!dragging) return;
-    const dx=e.clientX-startX, dy=e.clientY-startY;
-    if(!moved && (Math.abs(dx)>THRESH||Math.abs(dy)>THRESH)) moved=true;
-    if(!moved) return;
-    const nx=Math.max(4, Math.min(window.innerWidth-80, startL+dx));
-    const ny=Math.max(4, Math.min(window.innerHeight-60, startT+dy));
-    win.style.left=nx+'px'; win.style.top=ny+'px';
-  }
-  function onUp(){
-    dragging=false;
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-  }
-  handle.addEventListener('mousedown', onDown);
-  win.addEventListener('mousedown', ()=> win.style.zIndex=(++zTop).toString());
-  win.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', ()=> win.classList.remove('active')));
-}
-makeDraggable(document.getElementById('calcWin'));
-makeDraggable(document.getElementById('refWin'));
-
-/* Open/close + Desmos init */
-const calcWin=document.getElementById('calcWin');
-const refWin=document.getElementById('refWin');
-document.getElementById('btnCalc').addEventListener('click', ()=>{
-  calcWin.classList.toggle('active');
-  if (calcWin.classList.contains('active')){
-    ensureDesmos();
-    requestAnimationFrame(()=>{ try{ graphCalc?.resize(); }catch{} });
-  }
-});
-document.getElementById('btnRef').addEventListener('click', ()=> refWin.classList.toggle('active'));
-
-/* Desmos instances */
-let graphCalc=null, sciCalc=null;
-function ensureDesmos(){
-  if(!graphCalc){
-    graphCalc = Desmos.GraphingCalculator(document.getElementById('graphCalc'),{
-      expressions:true, expressionsTopbar:true, keypad:true, zoomButtons:true, settingsMenu:false
-    });
-  }
-  if(!sciCalc){
-    sciCalc = Desmos.ScientificCalculator(document.getElementById('sciCalc'),{ keypad:true });
-  }
-}
-
-/* Calc tabs */
-(function(){
-  const tabs=calcWin.querySelectorAll('.tab');
-  tabs.forEach(t=>t.addEventListener('click',()=>{
-    tabs.forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    const isGraph=(t.dataset.tab==='graph');
-    document.getElementById('graphCalc').style.display=isGraph?'block':'none';
-    document.getElementById('sciCalc').style.display=isGraph?'none':'block';
-    ensureDesmos();
-    if(isGraph) requestAnimationFrame(()=>{ try{ graphCalc?.resize(); }catch{} });
-  }));
-})();
-
-/* Reference image with fallbacks */
-(function loadReference(){
-  const img=document.getElementById('refImg');
-  const candidates=[
-    'data/reference.png',
-    'data/reference.jpg',
-    'data/SAT-FORMULA-SHEET-1024x595.jpg',
-    'data/reference.jpeg'
-  ];
-  let i=0;
-  function tryNext(){
-    if(i>=candidates.length){
-      img.remove();
-      document.querySelector('#refWin .ref-wrap').innerHTML =
-        '<div class="muted">Reference image not found. Add one at <code>docs/data/reference.png</code> (or .jpg).</div>';
-      return;
-    }
-    img.src=candidates[i++];
-    img.onerror=tryNext;
-  }
-  tryNext();
-})();
-
-/* ======= mini generator (unchanged) ======= */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
-function seededShuffle(arr,seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function pick(spec,rnd){if(!spec)throw new Error("Bad param spec");if(Array.isArray(spec.values)){const a=spec.values;return a[Math.floor(rnd()*a.length)];}const min=spec.min??0,max=spec.max??min,exclude=new Set(spec.exclude||[]),isInt=Number.isInteger(min)&&Number.isInteger(max);for(let i=0;i<400;i++){const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));if(!exclude.has(v))return v;}throw new Error("Could not sample param.");}
-function renderStem(stem,vars){return String(stem||"").replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
-function evalExpr(expr,scope){const keys=["Math","Number",...Object.keys(scope)],vals=[Math,Number,...Object.values(scope)];if(typeof expr!=="string")return expr;if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr))throw new Error("Unsafe expression: "+expr);return Function(...keys,'"use strict"; return ('+expr+');')(...vals);}
-function safeEvalOrLiteral(expr,scope){if(typeof expr!=="string")return expr;const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);try{if(hasOp)return evalExpr(expr,scope);if(expr in scope)return scope[expr];return expr;}catch{return expr;}}
-function generateItem(tpl, seed="demo"){
+function seededShuffle(arr, seed){
+  const rnd = makeRng(seed);
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function pick(spec,rnd){
+  if(!spec) throw new Error('Bad param spec');
+  if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
+  const min=spec.min??0, max=spec.max??min, exclude=new Set(spec.exclude||[]);
+  const isInt=Number.isInteger(min)&&Number.isInteger(max);
+  for(let i=0;i<400;i++){
+    const v=isInt?Math.floor(min+rnd()*(max-min+1)):(min+rnd()*(max-min));
+    if(!exclude.has(v)) return v;
+  }
+  throw new Error('Could not sample param (too restrictive).');
+}
+function renderStem(stem,vars){return String(stem||'').replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+function evalExpr(expr,scope){
+  const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
+  if(typeof expr!=='string') return expr;
+  if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error('Unsafe expression: '+expr);
+  return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
+}
+function safeEvalOrLiteral(expr,scope){
+  if(typeof expr!=='string') return expr;
+  const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
+  try{
+    if(hasOp) return evalExpr(expr,scope);
+    if(expr in scope) return scope[expr];
+    return expr;
+  }catch{ return expr; }
+}
+
+/* Formatting: keep template.format support; else global default rounding to 3 decimals (no trailing zero spam). */
+function formatNumber(x,fmt){
+  if(typeof x!=='number' || !isFinite(x)) return x;
+  if(fmt && fmt.fixed!=null) return Number(x.toFixed(+fmt.fixed));
+  if(fmt && fmt.round!=null){ const p=Math.pow(10,+fmt.round); return Math.round(x*p)/p; }
+  // global default: 3 decimals max
+  const p=Math.pow(10,3); return Math.round(x*p)/p;
+}
+
+function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
-  const {stem,params={},derived={},constraints=[],answer,distractors=[]}=tpl;
+  const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
+  const fmt = template.format || template.display || null;
   const MAX=250;
   for(let attempt=0;attempt<MAX;attempt++){
     const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
-    const D={}; let okDer=true; for(const[k,e] of Object.entries(derived)){try{D[k]=evalExpr(e,{...P,...D});}catch{okDer=false;break;}}
-    if(!okDer)continue;
-    let ok=true; for(const c of constraints){try{if(!evalExpr(c,{...P,...D})){ok=false;break;}}catch{ok=false;break;}} if(!ok)continue;
-    let ans=safeEvalOrLiteral(answer,{...P,...D});
-    const opts=[]; for(const d of distractors){const v=safeEvalOrLiteral(d,{...P,...D,ans}); if(String(v)!==String(ans)) opts.push(v);}
+    const D={}; let okDer=true;
+    for(const[k,e] of Object.entries(derived)){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
+    if(!okDer) continue;
+    let ok=true;
+    for(const c of constraints){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } } catch{ ok=false; break; } }
+    if(!ok) continue;
+    let ans = formatNumber(safeEvalOrLiteral(answer,{...P,...D}), fmt);
+    const opts=[];
+    for(const d of distractors){
+      let v = formatNumber(safeEvalOrLiteral(d,{...P,...D,ans}), fmt);
+      if(String(v)!==String(ans)) opts.push(v);
+    }
+    // Ensure 4 choices total for numeric answers.
+    if(typeof ans==='number' && opts.length<3){
+      const used=new Set([String(ans), ...opts.map(String)]);
+      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
+      const candidates=[ ans+mag, ans-mag, Math.floor(ans), Math.ceil(ans), ans*1.1, ans*0.9 ];
+      for(const c of candidates){
+        const v=formatNumber(c,fmt);
+        if(!Number.isNaN(v) && !used.has(String(v))){ opts.push(v); used.add(String(v)); if(opts.length>=3) break; }
+      }
+      const padRnd=makeRng(seed+':auto');
+      while(opts.length<3){
+        const delta=(0.5+padRnd())*mag*(padRnd()<0.5?-1:1);
+        const v=formatNumber(ans+delta,fmt);
+        if(!used.has(String(v))){ opts.push(v); used.add(String(v)); }
+      }
+    }
     return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
   }
-  throw new Error("Constraint not satisfiable.");
+  throw new Error('Constraint not satisfiable after multiple attempts');
 }
 
-const FILES={HOA:"data/MASTER_HOA_SAT.json",PAM:"data/MASTER_PAM_SAT.json",PSDA:"data/MASTER_PSDA_SAT.json",GEOT:"data/MASTER_GEOT_SAT.json"};
-async function loadAll(){const all=await Promise.all(Object.values(FILES).map(u=>fetch(u,{cache:"no-store"}).then(r=>r.json())));return all.flat();}
-function renderMath(){ if(window.renderMathInElement){ window.renderMathInElement(document.body,{ delimiters:[
-  {left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false},{left:"$",right:"$",display:false}
-], throwOnError:false}); } }
+/* ------------------------------------------------------------------ */
+/* Data loading + session seed                                         */
+/* ------------------------------------------------------------------ */
+const FILES={
+  HOA:'data/MASTER_HOA_SAT.json',
+  PAM:'data/MASTER_PAM_SAT.json',
+  PSDA:'data/MASTER_PSDA_SAT.json',
+  GEOT:'data/MASTER_GEOT_SAT.json'
+};
+const REFERENCE_IMG = 'data/sat-reference.jpg'; /* put your image here */
 
-let items=[], gen=[], idx=0, answers = new Map();
-function show(i){
-  const card=document.getElementById('qCard'), st=document.getElementById('statusCard'); st.style.display='none'; card.style.display='block';
-  idx=Math.max(0,Math.min(gen.length-1,i)); const it=gen[idx];
-  document.getElementById('qNum').textContent=(idx+1);
-  document.getElementById('qLoc').textContent=`Question ${idx+1} of ${gen.length}`;
-  document.getElementById('stem').innerHTML=it.stem;
-
-  const mc=document.getElementById('mcWrap'), cr=document.getElementById('crWrap'); mc.innerHTML='';
-  if(it.distractors && it.distractors.length){
-    mc.style.display='grid'; cr.style.display='none';
-    const opts=seededShuffle([it.answer,...it.distractors],'opts:'+idx).map(v=>String(v));
-    const saved=answers.get(idx);
-    opts.forEach(o=>{
-      const div=document.createElement('div');
-      div.className='choice'+(saved===o?' selected':'');
-      div.textContent=o;
-      div.addEventListener('click',()=>{
-        answers.set(idx,o);
-        mc.querySelectorAll('.choice').forEach(c=>c.classList.remove('selected'));
-        div.classList.add('selected');
-      });
-      mc.appendChild(div);
-    });
-  } else {
-    mc.style.display='none'; cr.style.display='flex';
-    const input=document.getElementById('crInput');
-    input.value=answers.get(idx)??''; input.oninput=()=>answers.set(idx,input.value);
-  }
-  document.getElementById('navStatus').textContent=`${idx+1}/${gen.length}`;
-  renderMath();
-}
-document.getElementById('prevBtn').addEventListener('click',()=>show(idx-1));
-document.getElementById('nextBtn').addEventListener('click',()=>show(idx+1));
-
-let seconds=35*60; const tEl=document.getElementById('timer');
-setInterval(()=>{ if(seconds<=0) return; seconds--; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); tEl.textContent=`${m}:${s}`; },1000);
-
-(async function(){
-  const all=await loadAll();
-  const E=all.filter(x=>(x.difficulty||'M')==='E');
-  const M=all.filter(x=>(x.difficulty||'M')==='M');
-  const H=all.filter(x=>(x.difficulty||'M')==='H');
-  function take(arr,n,tag){ return seededShuffle(arr,tag).slice(0,n); }
-  items=[...take(E,7,'E'),...take(M,10,'M'),...take(H,5,'H')];
-  const seedBase='module1';
-  gen=items.map((it,i)=>generateItem(it.template,`${seedBase}:${it.id||i}`));
-  document.getElementById('status').textContent='Module ready.';
-  show(0);
+const qs=new URLSearchParams(location.search);
+const sessionSeed = qs.get('seed') || (()=>{
+  try{const a=new Uint32Array(2); crypto.getRandomValues(a); return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);}
+  catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 })();
+if(!qs.get('seed')){ qs.set('seed', sessionSeed); history.replaceState(null,'',location.pathname+'?'+qs.toString()); }
+
+document.getElementById('seedEcho').textContent='Seed: '+sessionSeed;
+
+async function loadAll(){
+  const names=Object.keys(FILES);
+  const all=[];
+  for(const n of names){
+    const resp = await fetch(FILES[n], {cache:'no-store'});
+    if(!resp.ok) throw new Error('Failed to load '+n);
+    const arr = await resp.json();
+    all.push(...arr);
+  }
+  return all;
+}
+
+/* ------------------------------------------------------------------ */
+/* Test engine                                                         */
+/* ------------------------------------------------------------------ */
+const MODULE_TIME = 35*60; // 35 minutes
+const BRANCH_THRESHOLD = 14; // >=14 correct -> Hard
+
+const BLUEPRINT = {
+  M1: {E:7, M:10, H:5},
+  M2easy: {E:9, M:11, H:2},
+  M2hard: {E:3, M:12, H:7}
+};
+
+let pool={E:[],M:[],H:[]};
+let usedIds=new Set();
+
+let state={
+  module:1,
+  items:[],     // raw templates selected (module scope)
+  gens:[],      // generated items (with numbers)
+  answers:new Map(), // qIndex -> answer string
+  idx:0,
+  timer:null,
+  remaining:MODULE_TIME,
+  route:'easy'  // for module 2
+};
+
+function splitByDifficulty(all){
+  return {
+    E: all.filter(x=>(x.difficulty||'M')==='E'),
+    M: all.filter(x=>(x.difficulty||'M')==='M'),
+    H: all.filter(x=>(x.difficulty||'M')==='H'),
+  };
+}
+
+function takeUnique(arr, n, tag){
+  const rnd=makeRng(tag);
+  const a = arr.filter(x=>!usedIds.has(x.id));
+  const sh = a.slice();
+  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
+  return sh.slice(0, n);
+}
+
+function buildModule(which, branchTag){
+  const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
+  const tagBase = `m${which}:${branchTag}:${sessionSeed}`;
+  const pickE = takeUnique(pool.E, bp.E, tagBase+':E');
+  const pickM = takeUnique(pool.M, bp.M, tagBase+':M');
+  const pickH = takeUnique(pool.H, bp.H, tagBase+':H');
+  const items=[...pickE, ...pickM, ...pickH];
+  // Shuffle overall order so Q1 isn't predictable
+  const ordered = seededShuffle(items, tagBase+':order');
+  // Mark used
+  ordered.forEach(it=>{ if(it.id) usedIds.add(it.id); });
+  return ordered;
+}
+
+function generateModuleItems(items, which, branchTag){
+  const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
+  return items.map((it,i)=> generateItem(it.template, `${seedBase}:${it.id||i}`));
+}
+
+function startTimer(){
+  clearInterval(state.timer);
+  const el = document.getElementById('hdrTimer');
+  function render(){
+    const m=Math.floor(state.remaining/60), s=state.remaining%60;
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  render();
+  state.timer=setInterval(()=>{
+    state.remaining--;
+    if(state.remaining<=0){ clearInterval(state.timer); submitModule(); }
+    else render();
+  }, 1000);
+}
+
+function show(idx){
+  const total = state.gens.length;
+  state.idx = Math.max(0, Math.min(idx, total-1));
+  const g = state.gens[state.idx];
+  const t = state.items[state.idx];
+
+  document.getElementById('intro').style.display='none';
+  document.getElementById('qCard').style.display='';
+  document.getElementById('summary').style.display='none';
+
+  document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
+  document.getElementById('qMeta').textContent = (t.domain? t.domain+' • ':'') + (t.subtopic||'');
+  document.getElementById('qDiff').textContent = t.difficulty || 'M';
+  document.getElementById('qStem').textContent = g.stem;
+
+  const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
+  const chosen = state.answers.get(state.idx) ?? null;
+  const wrap = document.getElementById('qChoices');
+  wrap.innerHTML='';
+  opts.forEach((o,i)=>{
+    const id=`opt${state.idx}_${i}`;
+    const div=document.createElement('label');
+    div.className='choice';
+    div.innerHTML = `<input type="radio" name="q${state.idx}" id="${id}" value="${String(o)}"> <span>${String(o)}</span>`;
+    const input = div.querySelector('input');
+    if(chosen!==null && String(chosen)===String(o)) input.checked=true;
+    input.addEventListener('change',()=> state.answers.set(state.idx, String(o)) );
+    wrap.appendChild(div);
+  });
+
+  // nav buttons
+  document.getElementById('btnPrev').disabled = state.idx===0;
+  const last = state.idx===total-1;
+  document.getElementById('btnNext').style.display = last? 'none': '';
+  document.getElementById('btnSubmitModule').style.display = last? '': 'none';
+}
+
+function scoreModule(){
+  let correct=0;
+  state.gens.forEach((g,i)=>{
+    const a = state.answers.get(i);
+    if(String(a)===String(g.answer)) correct++;
+  });
+  return correct;
+}
+
+function submitModule(){
+  clearInterval(state.timer);
+  const correct = scoreModule();
+  const total = state.gens.length;
+
+  const sum = document.getElementById('summary');
+  sum.style.display='';
+  document.getElementById('qCard').style.display='none';
+
+  const branch = (state.module===1)
+    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
+    : state.route;
+
+  let html = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>`;
+  html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
+  html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
+
+  if(state.module===1){
+    html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
+    html += `<div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`;
+  } else {
+    html += `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
+             <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`;
+  }
+
+  document.getElementById('summary').innerHTML = html;
+
+  if(state.module===1){
+    state.route = branch;
+    document.getElementById('btnBeginM2').onclick = () => beginModule2();
+  }else{
+    document.getElementById('btnNew').onclick = ()=>{
+      const u=new URL(location.href);
+      u.searchParams.delete('seed'); location.href=u.toString(); // new random seed
+    };
+    document.getElementById('btnReview').onclick = ()=> reviewAnswers();
+  }
+}
+
+function reviewAnswers(){
+  // simple review: re-show module 2 with correct/incorrect marking
+  const sum = document.getElementById('summary');
+  let html = `<h2 style="margin:0 0 8px;">Module 2 — Review</h2>`;
+  state.gens.forEach((g,i)=>{
+    const your = state.answers.get(i);
+    const ok = String(your)===String(g.answer);
+    html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
+      <div class="tiny">Q ${i+1}</div>
+      <div>${g.stem}</div>
+      <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${your??'—'} • Correct: ${g.answer}</div>
+    </div>`;
+  });
+  html += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
+  sum.innerHTML = html;
+}
+
+async function beginModule1(){
+  document.getElementById('hdrModule').textContent='Module 1';
+  document.getElementById('status').textContent='Loading question bank…';
+
+  const all = await loadAll();
+  pool = splitByDifficulty(all);
+
+  usedIds.clear();
+  state.module=1;
+  state.answers = new Map();
+  state.remaining = MODULE_TIME;
+
+  state.items = buildModule(1,'base');
+  state.gens  = generateModuleItems(state.items, 1, 'base');
+
+  document.getElementById('status').textContent='Module 1 ready.';
+  show(0);
+  startTimer();
+}
+
+function beginModule2(){
+  document.getElementById('hdrModule').textContent='Module 2';
+  document.getElementById('status').textContent='Building Module 2…';
+
+  state.module=2;
+  state.answers = new Map();
+  state.remaining = MODULE_TIME;
+
+  state.items = buildModule(2, state.route);
+  state.gens  = generateModuleItems(state.items, 2, state.route);
+
+  document.getElementById('status').textContent='Module 2 ready.';
+  show(0);
+  startTimer();
+}
+
+/* ------------------------------------------------------------------ */
+/* UI wiring                                                           */
+/* ------------------------------------------------------------------ */
+document.getElementById('btnStart').addEventListener('click', beginModule1);
+document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
+document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
+document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
+document.getElementById('btnCopy').addEventListener('click',()=>{
+  navigator.clipboard.writeText(location.href).then(()=>{
+    const s=document.getElementById('status'); s.textContent='Link copied (same seed).'; setTimeout(()=>s.textContent='',1500);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Pop-out windows (drag via header only)                              */
+/* ------------------------------------------------------------------ */
+function enableDrag(popId){
+  const pop=document.getElementById(popId);
+  const head = pop.querySelector('.head');
+  let dragging=false, sx=0, sy=0, sl=0, st=0;
+
+  head.addEventListener('mousedown', (e)=>{ dragging=true; sx=e.clientX; sy=e.clientY; const r=pop.getBoundingClientRect(); sl=r.left; st=r.top; e.preventDefault(); });
+  window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; pop.style.left=(sl+dx)+'px'; pop.style.top=(st+dy)+'px'; pop.style.right='auto'; pop.style.bottom='auto'; });
+  window.addEventListener('mouseup', ()=> dragging=false);
+}
+
+enableDrag('popCalc'); enableDrag('popRef');
+document.getElementById('btnCalc').onclick=()=>{ const p=document.getElementById('popCalc'); p.style.display='block'; };
+document.getElementById('btnRef').onclick =()=>{ const p=document.getElementById('popRef');  p.style.display='block'; };
+document.querySelector('[data-close="calc"]').onclick=()=>document.getElementById('popCalc').style.display='none';
+document.querySelector('[data-close="ref"]').onclick =()=>document.getElementById('popRef').style.display='none';
+
+// load reference image
+document.getElementById('refImg').src = REFERENCE_IMG;
+document.getElementById('refImg').onerror = function(){ this.alt='Reference sheet image not found at '+REFERENCE_IMG; };
+
 </script>
 </body>
 </html>
