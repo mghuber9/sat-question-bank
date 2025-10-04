@@ -113,6 +113,11 @@
 
 <script>
 /* ------------------------------------------------------------------ */
+/* DEBUG switch (show Item ID when ?debug=1)                           */
+/* ------------------------------------------------------------------ */
+const DEBUG = new URLSearchParams(location.search).has('debug');
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
@@ -221,8 +226,6 @@ function splitChoices(raw){
   if(text.includes('||')) return text.split('||').map(s=>s.trim());
   return [text];
 }
-
-/* Extract inline choices from the STEM itself */
 function extractInlineChoicesFromStem(stemText){
   const rx = /(?:^|\s)([A-D])[\.\)\]]\s+/;
   const m = rx.exec(stemText);
@@ -241,13 +244,13 @@ function generateItem(template, seed='demo'){
   const fmt = template.format || template.display || null;
   const MAX=250;
 
-  // Build variable scope first (so we can render templated stems/choices)
+  // Build variable scope first
   const P={}, D={};
   for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
-  for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ /* ignore here; parametric branch handles */ } }
+  for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{} }
   const scope={...P,...D};
 
-  /* ---- 1) Static choice style (many field-name possibilities) ---- */
+  // Static-choice style (scan many aliases)
   const choiceField = ['choices','options','answers','answerChoices','choiceList','optionsList','choicesInline','allChoicesInline','rawChoices','choicesRaw']
     .find(f => template[f]!=null);
   if(choiceField){
@@ -255,19 +258,15 @@ function generateItem(template, seed='demo'){
       ? template[choiceField].map(c=>renderTemplate(String(c),scope))
       : splitChoices(renderTemplate(String(template[choiceField]),scope));
 
-    // If choices weren’t provided but stem contains inline choices, extract from stem.
     let stemText = renderTemplate(stem, scope);
     if((!choices || choices.length<2) && stemText){
       const pulled = extractInlineChoicesFromStem(stemText);
       if(pulled){ stemText = pulled.stem; choices = pulled.choices; }
     }
 
-    // Determine correct index (index or letter or exact text)
     let idx = null;
     const idxFields = ['answerIndex','correctIndex','keyIndex'];
-    for(const f of idxFields){
-      if(template[f]!=null){ const v = Number(template[f]); if(Number.isFinite(v)) { idx=v; break; } }
-    }
+    for(const f of idxFields){ if(template[f]!=null){ const v=Number(template[f]); if(Number.isFinite(v)) { idx=v; break; } } }
     const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
     if(idx==null){
       for(const f of letterFields){
@@ -280,7 +279,6 @@ function generateItem(template, seed='demo'){
         }
       }
     }
-    // allow 1-based
     if(idx!=null && idx>=1 && idx<=5 && idx>choices.length-1) idx = idx-1;
     if(idx==null || !(idx>=0 && idx<choices.length)) idx = 0;
 
@@ -292,9 +290,8 @@ function generateItem(template, seed='demo'){
     };
   }
 
-  /* ---- 2) Parametric / numeric style ----------------------------- */
+  // Parametric / numeric style
   for(let attempt=0;attempt<MAX;attempt++){
-    // recompute derived using robust try
     const P2={...P}, D2={};
     let okDer=true;
     for(const[k,e] of Object.entries(derived||{})){ try{ D2[k]=evalExpr(e,{...P2,...D2}); } catch{ okDer=false; break; } }
@@ -314,25 +311,22 @@ function generateItem(template, seed='demo'){
       if(String(v)!==String(ans)) opts.push(v);
     }
 
-    // If still no choices and the stem itself has inline A/B/C/D, pull them out
-    if(opts.length<3){
-      const pulled = extractInlineChoicesFromStem(stemText);
-      if(pulled && pulled.choices.length>=2){
-        const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
-        let idx = null;
-        for(const f of letterFields){
-          if(template[f]!=null){
-            const li = letterToIndex(String(template[f]));
-            if(li!=null){ idx=li; break; }
-            const txt = String(template[f]).trim();
-            const j = pulled.choices.findIndex(c => String(c).trim()===txt);
-            if(j>=0){ idx=j; break; }
-          }
+    const pulled = extractInlineChoicesFromStem(stemText);
+    if(opts.length<3 && pulled && pulled.choices.length>=2){
+      const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
+      let idx = null;
+      for(const f of letterFields){
+        if(template[f]!=null){
+          const li = letterToIndex(String(template[f]));
+          if(li!=null){ idx=li; break; }
+          const txt = String(template[f]).trim();
+          const j = pulled.choices.findIndex(c => String(c).trim()===txt);
+          if(j>=0){ idx=j; break; }
         }
-        if(idx==null) idx = 0;
-        return { stem: pulled.stem, answer: pulled.choices[idx], distractors: pulled.choices.filter((_,i)=>i!==idx),
-          figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null };
       }
+      if(idx==null) idx = 0;
+      return { stem: pulled.stem, answer: pulled.choices[idx], distractors: pulled.choices.filter((_,i)=>i!==idx),
+        figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null };
     }
 
     if(typeof ans==='number' && opts.length<3){
@@ -396,11 +390,9 @@ let usedIds=new Set();
 let state={ module:1, items:[], gens:[], answers:new Map(), idx:0, timer:null, remaining:MODULE_TIME, route:'easy' };
 
 function splitByDifficulty(all){
-  return {
-    E: all.filter(x=>(x.difficulty||'M')==='E'),
-    M: all.filter(x=>(x.difficulty||'M')==='M'),
-    H: all.filter(x=>(x.difficulty||'M')==='H'),
-  };
+  return { E: all.filter(x=>(x.difficulty||'M')==='E'),
+           M: all.filter(x=>(x.difficulty||'M')==='M'),
+           H: all.filter(x=>(x.difficulty||'M')==='H') };
 }
 function takeUnique(arr, n, tag){
   const rnd=makeRng(tag);
@@ -439,11 +431,7 @@ function startTimer(){
     else render();
   }, 1000);
 }
-
-function firstNonNull(...vals){
-  for(const v of vals){ if(v!==undefined && v!==null && v!=='') return v; }
-  return null;
-}
+function firstNonNull(...vals){ for(const v of vals){ if(v!==undefined && v!==null && v!=='') return v; } return null; }
 
 function show(idx){
   const total = state.gens.length;
@@ -455,7 +443,13 @@ function show(idx){
   document.getElementById('qCard').style.display='';
   document.getElementById('summary').style.display='none';
 
-  document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
+  // --- DEBUG label with Item ID ---
+  const idText = t.id || t.template?.id || t.template?.sourceId || t.template?.ID || '';
+  const label = DEBUG && idText
+    ? `Q ${state.idx+1} of ${total} • ID ${idText}`
+    : `Q ${state.idx+1} of ${total}`;
+  document.getElementById('qNum').textContent = label;
+
   document.getElementById('qStem').textContent = g.stem;
 
   // Figure/diagram support
