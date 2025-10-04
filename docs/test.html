@@ -131,12 +131,12 @@
 
 <script>
 /* Guard: swallow any cross-origin history.replaceState errors (Codespaces) */
-(function () {
+(() => {
   const orig = history.replaceState;
   if (!orig) return;
   history.replaceState = function (...args) {
     try { return orig.apply(this, args); }
-    catch (e) { /* ignore benign replaceState errors in Codespaces */ }
+    catch { /* ignore benign replaceState errors in Codespaces */ }
   };
 })();
 
@@ -183,8 +183,8 @@ function safeEvalOrLiteral(expr,scope){
 /* tidy text for nicer reading */
 function tidy(s){
   return String(s||'')
-    .replace(/\+\s*-/g,' - ')      // "+ -5" -> " - 5"
-    .replace(/-\s*-/g,' + ')       // "- -5" -> "+ 5"
+    .replace(/\+\s*-/g,' - ')
+    .replace(/-\s*-/g,' + ')
     .replace(/\b1x\b/g,'x')
     .replace(/\b-1x\b/g,'-x')
     .replace(/\s{2,}/g,' ')
@@ -219,7 +219,6 @@ function generateItem(template, seed='demo'){
       let v = formatNumber(safeEvalOrLiteral(d,{...scope,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
-    // If numeric and not enough options, pad sensibly
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -251,7 +250,7 @@ const FILES = {
 const REFERENCE_IMG = '/data/sat-reference.jpg';
 
 /* ------------------------------------------------------------------ */
-/* Data loading + session seed (Codespaces-safe, no replaceState)     */
+/* Data loading + session seed (no replaceState)                       */
 /* ------------------------------------------------------------------ */
 const qs = new URLSearchParams(window.location.search);
 const sessionSeed =
