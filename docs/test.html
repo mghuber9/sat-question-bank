@@ -20,7 +20,6 @@
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
   .spacer{flex:1}
   .btn{background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue); font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;}
-  .btn.secondary{background:transparent;color:#fff;border-color:#fff}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   main{max-width:1050px; margin:16px auto; padding:0 16px 40px}
   .card{background:var(--card); border:1px solid #dfe6ff; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(31,77,181,.08)}
@@ -46,7 +45,8 @@
   .dock{display:flex; gap:10px}
   .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
   .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
-  .chip{padding:2px 8px;border-radius:999px;background:var(--cb-blue-100); border:1px solid #cfe0ff; color:#143b8d; font-weight:600}
+  .figure{margin:8px 0 0}
+  .figure img{max-width:100%; height:auto; display:block; margin:0 auto; border-radius:8px; border:1px solid #e8efff}
 </style>
 </head>
 <body>
@@ -60,7 +60,6 @@
     <button id="btnRef" class="btn">Reference</button>
     <button id="btnCalc" class="btn">Calculator</button>
   </div>
-  <button id="btnCopy" class="btn secondary" title="Copy link to this exact test (same seed)">Copy link</button>
 </header>
 
 <main>
@@ -79,11 +78,9 @@
   <div id="qCard" class="card" style="display:none">
     <div class="row">
       <div id="qNum" class="qnum">Q 1</div>
-      <div id="qMeta" class="tiny"></div>
-      <div class="spacer"></div>
-      <div id="qDiff" class="chip">E</div>
     </div>
     <div id="qStem" class="stem">Loading…</div>
+    <div id="qFigure" class="figure" style="display:none"></div>
     <div id="qChoices" class="choices"></div>
 
     <div class="nav">
@@ -116,14 +113,14 @@
 
 <script>
 /* ------------------------------------------------------------------ */
-/* Helpers (seeded RNG + safe rendering)                               */
+/* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
-// escape only for places we must inject HTML (review/summary); elsewhere use textContent.
+// escape only when injecting as HTML (we mostly use textContent)
 function escapeHTML(s){
   return String(s??'')
     .replace(/&/g,'&amp;')
@@ -174,22 +171,119 @@ function formatNumber(x,fmt){
   if(fmt && fmt.round!=null){ const p=Math.pow(10,+fmt.round); return Math.round(x*p)/p; }
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
+
+/* ---- robust choice handling -------------------------------------- */
+function letterToIndex(s){
+  if(typeof s!=='string' || !s) return null;
+  const m = s.trim().match(/^[A-E]/i);
+  return m ? (m[0].toUpperCase().charCodeAt(0)-65) : null;
+}
+function splitChoices(raw){
+  if(!raw) return [];
+  const text = String(raw).trim();
+  // Try "A. … B. …" inline
+  const rx = /(?:^|\s)([A-E])[\.\)\]]\s+/g;
+  const labels = [];
+  let match;
+  while((match = rx.exec(text))!==null){
+    labels.push({label:match[1], idx: match.index + match[0].length});
+  }
+  if(labels.length){
+    const parts=[];
+    for(let i=0;i<labels.length;i++){
+      const start = labels[i].idx;
+      const end = (i+1<labels.length) ? labels[i+1].idx - labels[i+1].label.length - 3 : text.length;
+      parts.push(text.slice(start,end).trim());
+    }
+    return parts;
+  }
+  // Fallback: line-per-choice starting with A./B./C./D.
+  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const lineChoices = lines.filter(s=>/^[A-E][\.\)\]]\s+/.test(s)).map(s=>s.replace(/^[A-E][\.\)\]]\s+/, ''));
+  if(lineChoices.length) return lineChoices;
+  // last fallback: comma separated
+  if(text.includes('||')) return text.split('||').map(s=>s.trim());
+  return [text];
+}
+
+/* ---- generate item ----------------------------------------------- */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
-  const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
+  const { stem, params={}, derived={}, constraints=[] } = template;
   const fmt = template.format || template.display || null;
   const MAX=250;
+
+  // detect a static-choice template up front
+  const hasArrayChoices = Array.isArray(template.choices) && template.choices.length>=2;
+  const hasInlineChoices = !hasArrayChoices && typeof template.choicesRaw==='string' && template.choicesRaw.trim();
+
+  if(hasArrayChoices || hasInlineChoices){
+    // 1) build variable scope (for templated stems/choices if needed)
+    const P={}, D={};
+    for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
+    let okDer=true;
+    for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
+    if(!okDer) throw new Error('Derived error in static choice item');
+
+    const scope={...P,...D};
+    const stemText = renderStem(stem,scope);
+
+    // 2) choices
+    let choices = hasArrayChoices
+      ? template.choices.map(c=>renderStem(String(c),scope))
+      : splitChoices(renderStem(template.choicesRaw,scope));
+
+    // 3) correct answer index (supports index or letter)
+    let idx = null;
+
+    // Prefer explicit numeric index fields
+    const idxFields = ['answerIndex','correctIndex','keyIndex'];
+    for(const f of idxFields){
+      if(template[f]!=null){
+        idx = Number(template[f]);
+        if(isFinite(idx) && idx>=0 && idx<choices.length) break;
+        if(isFinite(idx) && idx===1 && choices.length===1) break;
+      }
+    }
+    // letter fields
+    if(idx===null){
+      const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
+      for(const f of letterFields){
+        if(template[f]!=null){
+          const maybeLetter = String(template[f]);
+          const li = letterToIndex(maybeLetter);
+          if(li!=null){ idx = li; break; }
+          // maybe the full text was provided
+          const j = choices.findIndex(c => String(c).trim()===maybeLetter.trim());
+          if(j>=0){ idx=j; break; }
+        }
+      }
+    }
+    // allow 1-based index
+    if(idx!=null && idx>=1 && idx>choices.length-1 && choices.length>=4 && idx<=5) idx = idx-1;
+
+    if(idx==null || !(idx>=0 && idx<choices.length)){
+      // best effort: assume first is correct if not specified
+      idx = 0;
+    }
+
+    const ans = choices[idx];
+    const distractors = choices.filter((_,i)=>i!==idx);
+    return { stem:stemText, answer:ans, distractors, figure: template.figure||template.image||template.img||template.diagram||null };
+  }
+
+  // Parametric/numeric style (your original generator)
   for(let attempt=0;attempt<MAX;attempt++){
-    const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
+    const P={}; for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
     const D={}; let okDer=true;
-    for(const[k,e] of Object.entries(derived)){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
+    for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
     if(!okDer) continue;
     let ok=true;
-    for(const c of constraints){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } } catch{ ok=false; break; } }
+    for(const c of (constraints||[])){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } } catch{ ok=false; break; } }
     if(!ok) continue;
-    let ans = formatNumber(safeEvalOrLiteral(answer,{...P,...D}), fmt);
+    let ans = formatNumber(safeEvalOrLiteral(template.answer,{...P,...D}), fmt);
     const opts=[];
-    for(const d of distractors){
+    for(const d of (template.distractors||[])){
       let v = formatNumber(safeEvalOrLiteral(d,{...P,...D,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
@@ -208,7 +302,7 @@ function generateItem(template, seed='demo'){
         if(!used.has(String(v))){ opts.push(v); used.add(String(v)); }
       }
     }
-    return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3) };
+    return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3), figure: template.figure||template.image||template.img||template.diagram||null };
   }
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
@@ -293,6 +387,11 @@ function startTimer(){
   }, 1000);
 }
 
+function firstNonNull(...vals){
+  for(const v of vals){ if(v!==undefined && v!==null && v!=='') return v; }
+  return null;
+}
+
 function show(idx){
   const total = state.gens.length;
   state.idx = Math.max(0, Math.min(idx, total-1));
@@ -304,12 +403,22 @@ function show(idx){
   document.getElementById('summary').style.display='none';
 
   document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
-  document.getElementById('qMeta').textContent = (t.domain? t.domain+' • ':'') + (t.subtopic||'');
-  document.getElementById('qDiff').textContent = t.difficulty || 'M';
-  // STEM: use textContent (safe literal)
   document.getElementById('qStem').textContent = g.stem;
 
-  // Build choices without innerHTML so f(x), <x>, etc. render literally
+  // Figure/diagram support
+  const figUrl = firstNonNull(g.figure, t.figure, t.image, t.img, t.diagram);
+  const figWrap = document.getElementById('qFigure');
+  figWrap.innerHTML = '';
+  if(figUrl){
+    const img = document.createElement('img');
+    img.alt = 'Question diagram';
+    img.src = figUrl;
+    figWrap.appendChild(img);
+    figWrap.style.display='';
+  }else{
+    figWrap.style.display='none';
+  }
+
   const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
   const chosen = state.answers.get(state.idx) ?? null;
   const wrap = document.getElementById('qChoices');
@@ -361,100 +470,45 @@ function submitModule(){
     ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
     : state.route;
 
-  const container = document.getElementById('summary');
-  container.innerHTML = '';
-
-  const h2=document.createElement('h2');
-  h2.style.margin='0 0 6px';
-  h2.textContent=`Module ${state.module} complete`;
-  container.appendChild(h2);
-
-  const p=document.createElement('p');
-  p.innerHTML=`<strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}`;
-  container.appendChild(p);
-
-  const seedP=document.createElement('p');
-  seedP.className='tiny';
-  seedP.innerHTML=`Seed: <code>${escapeHTML(sessionSeed)}</code>`;
-  container.appendChild(seedP);
+  sum.innerHTML =
+    `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>
+     <p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>
+     <p class="tiny">Seed: <code>${escapeHTML(sessionSeed)}</code></p>` +
+    (state.module===1
+      ? `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>
+         <div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`
+      : `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
+           <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`
+    );
 
   if(state.module===1){
-    const alert=document.createElement('div');
-    alert.className='alert';
-    alert.style.marginTop='10px';
-    alert.innerHTML=`Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).`;
-    container.appendChild(alert);
-
-    const wrap=document.createElement('div');
-    wrap.style.marginTop='12px';
-    const btn=document.createElement('button');
-    btn.id='btnBeginM2'; btn.className='btn'; btn.textContent='Begin Module 2';
-    wrap.appendChild(btn);
-    container.appendChild(wrap);
-
     state.route = branch;
-    btn.onclick = () => beginModule2();
-  } else {
-    const wrap=document.createElement('div');
-    wrap.style.marginTop='12px';
-    const btnNew=document.createElement('button');
-    btnNew.id='btnNew'; btnNew.className='btn'; btnNew.textContent='New Test (new seed)';
-    const btnRev=document.createElement('button');
-    btnRev.id='btnReview'; btnRev.className='btn'; btnRev.style.marginLeft='8px'; btnRev.textContent='Review answers';
-    wrap.appendChild(btnNew); wrap.appendChild(btnRev);
-    container.appendChild(wrap);
-
-    btnNew.onclick = ()=>{
+    document.getElementById('btnBeginM2').onclick = () => beginModule2();
+  }else{
+    document.getElementById('btnNew').onclick = ()=>{
       const u=new URL(location.href);
       u.searchParams.delete('seed'); location.href=u.toString();
     };
-    btnRev.onclick = ()=> reviewAnswers();
+    document.getElementById('btnReview').onclick = ()=> reviewAnswers();
   }
 }
 
 function reviewAnswers(){
   const sum = document.getElementById('summary');
   sum.style.display='';
-  sum.innerHTML = '';
-
-  const h2=document.createElement('h2');
-  h2.style.margin='0 0 8px';
-  h2.textContent='Module 2 — Review';
-  sum.appendChild(h2);
+  sum.innerHTML = '<h2 style="margin:0 0 8px;">Module 2 — Review</h2>';
 
   state.gens.forEach((g,i)=>{
     const your = state.answers.get(i);
     const ok = String(your)===String(g.answer);
-
-    const block=document.createElement('div');
-    block.style.cssText='padding:10px 0;border-top:1px solid #eef3ff';
-
-    const tiny=document.createElement('div');
-    tiny.className='tiny';
-    tiny.textContent=`Q ${i+1}`;
-    block.appendChild(tiny);
-
-    const stem=document.createElement('div');
-    stem.textContent = g.stem;            // literal
-    block.appendChild(stem);
-
-    const line=document.createElement('div');
-    line.className='tiny ' + (ok?'green':'red');
-    line.style.marginTop='6px';
-    line.textContent = `Your answer: ${your??'—'} • Correct: ${g.answer}`;
-    block.appendChild(line);
-
-    sum.appendChild(block);
+    sum.innerHTML +=
+      `<div style="padding:10px 0;border-top:1px solid #eef3ff">
+         <div class="tiny">Q ${i+1}</div>
+         <div>${escapeHTML(g.stem)}</div>
+         <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${escapeHTML(your??'—')} • Correct: ${escapeHTML(g.answer)}</div>
+       </div>`;
   });
-
-  const btnWrap=document.createElement('div');
-  btnWrap.style.marginTop='12px';
-  const back=document.createElement('button');
-  back.className='btn';
-  back.textContent='Back';
-  back.onclick = ()=> location.reload();
-  btnWrap.appendChild(back);
-  sum.appendChild(btnWrap);
+  sum.innerHTML += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
 }
 
 async function beginModule1(){
@@ -500,11 +554,6 @@ document.getElementById('btnStart').addEventListener('click', beginModule1);
 document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
 document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
 document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
-document.getElementById('btnCopy').addEventListener('click',()=>{
-  navigator.clipboard.writeText(location.href).then(()=>{
-    const s=document.getElementById('status'); s.textContent='Link copied (same seed).'; setTimeout(()=>s.textContent='',1500);
-  });
-});
 
 /* ------------------------------------------------------------------ */
 /* Pop-out windows (drag via header only)                              */
