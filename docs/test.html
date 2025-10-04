@@ -7,7 +7,7 @@
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --cb-blue:#1f4db5;        /* College Board-ish blue */
+    --cb-blue:#1f4db5;
     --cb-blue-600:#113a92;
     --cb-blue-100:#eaf0ff;
     --ink:#0b1020;
@@ -51,7 +51,7 @@
   .green{color:var(--ok)}
   .red{color:var(--bad)}
 
-  /* Pop-outs (calculator / reference) */
+  /* Pop-out windows */
   .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
        border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
   .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
@@ -59,11 +59,9 @@
   .pop .body{height:calc(100% - 42px); background:#fff; border-radius:0 0 14px 14px; overflow:hidden}
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
-
+  .calc-iframe{width:100%; height:100%; border:0}
   .dock{display:flex; gap:10px}
   .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
-
-  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
 
   /* always-visible debug badge (ID + module) */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
@@ -119,7 +117,11 @@
 <!-- Pop-outs -->
 <div id="popCalc" class="pop" aria-modal="true">
   <div class="head" data-drag="calc"><span>Desmos Calculator</span><button class="x" data-close="calc">✕</button></div>
-  <div class="body"><iframe class="calc-iframe" src="https://www.desmos.com/test-mode?lang=en&mode=sat&embed" title="Desmos SAT Calculator"></iframe></div>
+  <div class="body">
+    <iframe class="calc-iframe"
+      src="https://www.desmos.com/test-mode?lang=en&mode=sat&embed"
+      title="Desmos SAT Calculator"></iframe>
+  </div>
 </div>
 
 <div id="popRef" class="pop" aria-modal="true" style="width:760px;height:520px; right:560px;">
@@ -130,29 +132,34 @@
 </div>
 
 <script>
-/* Guard: swallow any cross-origin history.replaceState errors (Codespaces) */
-(() => {
-  const orig = history.replaceState;
-  if (!orig) return;
-  history.replaceState = function (...args) {
-    try { return orig.apply(this, args); }
-    catch { /* ignore benign replaceState errors in Codespaces */ }
-  };
-})();
+/* ---------------------------- URL normalization ---------------------------- */
+// If a user lands on //docs/test.html (double slash), normalize it.
+if (location.pathname.includes('//')) {
+  const normalized =
+    location.origin +
+    location.pathname.replace(/\/{2,}/g, '/') +
+    location.search +
+    location.hash;
+  location.replace(normalized);
+}
 
 /* ------------------------------------------------------------------ */
-/* Helpers: seeded RNG, eval, formatting, tidy text                    */
+/* Small helpers: seeded RNG, math-eval, generator with formatting     */
 /* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
-  // Don't surface benign replaceState warnings
-  if ((e.error?.message || e.message || '').includes('replaceState')) return;
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
+
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
-function seededShuffle(arr, seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function seededShuffle(arr, seed){
+  const rnd=makeRng(seed);
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
 function pick(spec,rnd){
   if(!spec) throw new Error('Bad param spec');
   if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
@@ -180,7 +187,7 @@ function safeEvalOrLiteral(expr,scope){
     return expr;
   }catch{ return expr; }
 }
-/* tidy text for nicer reading */
+/* Formatting & tidy text for nicer reading */
 function tidy(s){
   return String(s||'')
     .replace(/\+\s*-/g,' - ')
@@ -219,6 +226,7 @@ function generateItem(template, seed='demo'){
       let v = formatNumber(safeEvalOrLiteral(d,{...scope,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
+    // If numeric and not enough options, pad sensibly
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -239,36 +247,39 @@ function generateItem(template, seed='demo'){
 }
 
 /* ------------------------------------------------------------------ */
-/* Config: banks + reference image (root-absolute paths from /docs)   */
+/* Data loading + session seed (Codespaces-safe)                       */
 /* ------------------------------------------------------------------ */
-const FILES = {
-  HOA: '/data/CLEAN_HOA_SAT.json',
-  PAM: '/data/CLEAN_PAM_SAT.json',
+
+/* JSON bank files (use the cleaned banks) */
+const FILES={
+  HOA:'/data/CLEAN_HOA_SAT.json',
+  PAM:'/data/CLEAN_PAM_SAT.json',
   PSDA:'/data/CLEAN_PSDA_SAT.json',
   GEOT:'/data/CLEAN_GEOT_SAT.json'
 };
-const REFERENCE_IMG = '/data/sat-reference.jpg';
+const REFERENCE_IMG = '/data/sat-reference.jpg'; // if missing, alt text will show
 
-/* ------------------------------------------------------------------ */
-/* Data loading + session seed (no replaceState)                       */
-/* ------------------------------------------------------------------ */
 const qs = new URLSearchParams(window.location.search);
+
+/* No replaceState here to avoid cross-origin issues in Codespaces */
 const sessionSeed =
   qs.get('seed') ||
   (() => {
     try {
       const a = new Uint32Array(2);
       crypto.getRandomValues(a);
-      return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);
+      return (
+        Date.now().toString(36) +
+        a[0].toString(36) +
+        a[1].toString(36)
+      );
     } catch {
-      return Date.now().toString(36)+Math.random().toString(36).slice(2);
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
     }
   })();
+
 document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
 
-/* ------------------------------------------------------------------ */
-/* Data loader                                                        */
-/* ------------------------------------------------------------------ */
 async function loadAll(){
   const names=Object.keys(FILES);
   const all=[];
@@ -282,17 +293,27 @@ async function loadAll(){
 }
 
 /* ------------------------------------------------------------------ */
-/* Test engine — auto-skip broken items                               */
+/* Test engine — with auto-skip of broken items & de-duplication       */
 /* ------------------------------------------------------------------ */
 const MODULE_TIME = 35*60; // 35 minutes
 const BRANCH_THRESHOLD = 14; // >=14 correct -> Hard
-const BLUEPRINT = { M1:{E:7,M:10,H:5}, M2easy:{E:9,M:11,H:2}, M2hard:{E:3,M:12,H:7} };
+const BLUEPRINT = {
+  M1: {E:7, M:10, H:5},
+  M2easy: {E:9, M:11, H:2},
+  M2hard: {E:3, M:12, H:7}
+};
 
 let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
 let state={
-  module:1, items:[], gens:[], answers:new Map(), idx:0, timer:null,
-  remaining:MODULE_TIME, route:'easy'
+  module:1,
+  items:[],    // picked templates (module scope)
+  gens:[],     // generated/instantiated items
+  answers:new Map(),
+  idx:0,
+  timer:null,
+  remaining:MODULE_TIME,
+  route:'easy'
 };
 
 function splitByDifficulty(all){
@@ -306,7 +327,7 @@ function takeUnique(arr, seedTag){
   const rnd=makeRng(seedTag);
   const a = arr.filter(x=>!usedIds.has(x.id));
   const sh = a.slice();
-  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]]; }
+  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
   return sh;
 }
 function isPlayableGen(g){
@@ -315,35 +336,64 @@ function isPlayableGen(g){
   const okStem = g && String(g.stem||'').trim().length>10;
   return okAns && okChoices && okStem;
 }
+
+/* Stem signature to identify near-duplicates */
+function stemSignature(s){
+  return String(s || '')
+    .toLowerCase()
+    .replace(/\d+(\.\d+)?/g, '#')                    // numbers -> #
+    .replace(/\b(?:x|y|z|a|b|c|h|k|n|m|t)\b/g, 'v')  // common vars -> v
+    .replace(/[^\w\s]/g, ' ')                        // drop punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* Build a module that guarantees only playable, non-duplicate items.
+   Backfills from lower difficulty if a bucket runs short. */
 function buildPlayableModule(which, branchTag){
-  const bp = (which===1)?BLUEPRINT.M1:(branchTag==='hard'?BLUEPRINT.M2hard:BLUEPRINT.M2easy);
+  const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
   const need = [{d:'H',n:bp.H},{d:'M',n:bp.M},{d:'E',n:bp.E}];
   const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
   const tagBase  = `m${which}:${branchTag}:${sessionSeed}`;
   const outItems=[], outGens=[];
   const buckets={H:takeUnique(pool.H, tagBase+':H'), M:takeUnique(pool.M, tagBase+':M'), E:takeUnique(pool.E, tagBase+':E')};
 
+  const seenSigs = new Set();   // de-dup within a single module
+
   function tryPull(d){
     while(buckets[d].length){
       const it=buckets[d].shift();
       try{
         const g=generateItem(it.template, `${seedBase}:${it.id}`);
-        if(isPlayableGen(g)){ outItems.push(it); outGens.push(g); usedIds.add(it.id); return true; }
-      }catch{/* skip */}
+        if(!isPlayableGen(g)) continue;
+
+        // de-dupe by stem signature
+        const sig = stemSignature(g.stem);
+        if (seenSigs.has(sig)) continue;   // skip near-duplicate
+        seenSigs.add(sig);
+
+        outItems.push(it); outGens.push(g); usedIds.add(it.id);
+        return true;
+      }catch{/* skip bad item */}
     }
     return false;
   }
+
   for(const req of need){
     for(let k=0;k<req.n;k++){
       if(tryPull(req.d)) continue;
       if(req.d==='H' && tryPull('M')) continue;
       if((req.d==='H'||req.d==='M') && tryPull('E')) continue;
-      if(tryPull('H')||tryPull('M')||tryPull('E')) continue;
+      if(tryPull('H') || tryPull('M') || tryPull('E')) continue;
       break;
     }
   }
+
+  // Shuffle overall order so Q1 isn't predictable
   const order = seededShuffle([...outItems.keys()], tagBase+':order');
-  return {items:order.map(i=>outItems[i]), gens:order.map(i=>outGens[i])};
+  const itemsSh = order.map(i=>outItems[i]);
+  const gensSh  = order.map(i=>outGens[i]);
+  return {items:itemsSh, gens:gensSh};
 }
 
 function startTimer(){
@@ -354,7 +404,11 @@ function startTimer(){
     el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
   render();
-  state.timer=setInterval(()=>{ state.remaining--; if(state.remaining<=0){ clearInterval(state.timer); submitModule(); } else render(); }, 1000);
+  state.timer=setInterval(()=>{
+    state.remaining--;
+    if(state.remaining<=0){ clearInterval(state.timer); submitModule(); }
+    else render();
+  }, 1000);
 }
 
 function show(idx){
@@ -382,7 +436,7 @@ function show(idx){
     div.innerHTML = `<input type="radio" name="q${state.idx}" id="${id}" value="${String(o)}"> <span>${String(o)}</span>`;
     const input = div.querySelector('input');
     if(chosen!==null && String(chosen)===String(o)) input.checked=true;
-    input.addEventListener('change',()=> state.answers.set(state.idx, String(o)));
+    input.addEventListener('change',()=> state.answers.set(state.idx, String(o)) );
     wrap.appendChild(div);
   });
 
@@ -394,7 +448,10 @@ function show(idx){
 
 function scoreModule(){
   let correct=0;
-  state.gens.forEach((g,i)=>{ const a = state.answers.get(i); if(String(a)===String(g.answer)) correct++; });
+  state.gens.forEach((g,i)=>{
+    const a = state.answers.get(i);
+    if(String(a)===String(g.answer)) correct++;
+  });
   return correct;
 }
 
@@ -404,9 +461,12 @@ function submitModule(){
   const total = state.gens.length;
 
   const sum = document.getElementById('summary');
-  sum.style.display=''; document.getElementById('qCard').style.display='none';
+  sum.style.display='';
+  document.getElementById('qCard').style.display='none';
 
-  const branch = (state.module===1) ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy') : state.route;
+  const branch = (state.module===1)
+    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
+    : state.route;
 
   let html = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>`;
   html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
@@ -419,6 +479,7 @@ function submitModule(){
     html += `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
              <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`;
   }
+
   document.getElementById('summary').innerHTML = html;
 
   if(state.module===1){
@@ -426,7 +487,8 @@ function submitModule(){
     document.getElementById('btnBeginM2').onclick = () => beginModule2();
   }else{
     document.getElementById('btnNew').onclick = ()=>{
-      const u=new URL(location.href); u.searchParams.delete('seed'); location.href=u.toString();
+      const u=new URL(location.href);
+      u.searchParams.delete('seed'); location.href=u.toString();
     };
     document.getElementById('btnReview').onclick = ()=> reviewAnswers();
   }
@@ -451,17 +513,39 @@ function reviewAnswers(){
 async function beginModule1(){
   document.getElementById('hdrModule').textContent='Module 1';
   document.getElementById('status').textContent='Loading question bank…';
-  const all = await loadAll(); pool = splitByDifficulty(all);
-  usedIds.clear(); state.module=1; state.answers = new Map(); state.remaining = MODULE_TIME;
-  const built = buildPlayableModule(1,'base'); state.items=built.items; state.gens=built.gens;
-  document.getElementById('status').textContent='Module 1 ready.'; show(0); startTimer();
+
+  const all = await loadAll();
+  pool = splitByDifficulty(all);
+
+  usedIds.clear();
+  state.module=1;
+  state.answers = new Map();
+  state.remaining = MODULE_TIME;
+
+  const built = buildPlayableModule(1,'base');
+  state.items = built.items;
+  state.gens  = built.gens;
+
+  document.getElementById('status').textContent='Module 1 ready.';
+  show(0);
+  startTimer();
 }
+
 function beginModule2(){
   document.getElementById('hdrModule').textContent='Module 2';
   document.getElementById('status').textContent='Building Module 2…';
-  state.module=2; state.answers = new Map(); state.remaining = MODULE_TIME;
-  const built = buildPlayableModule(2, state.route); state.items=built.items; state.gens=built.gens;
-  document.getElementById('status').textContent='Module 2 ready.'; show(0); startTimer();
+
+  state.module=2;
+  state.answers = new Map();
+  state.remaining = MODULE_TIME;
+
+  const built = buildPlayableModule(2, state.route);
+  state.items = built.items;
+  state.gens  = built.gens;
+
+  document.getElementById('status').textContent='Module 2 ready.';
+  show(0);
+  startTimer();
 }
 
 /* ------------------------------------------------------------------ */
@@ -479,18 +563,18 @@ function enableDrag(popId){
   const pop=document.getElementById(popId);
   const head = pop.querySelector('.head');
   let dragging=false, sx=0, sy=0, sl=0, st=0;
+
   head.addEventListener('mousedown', (e)=>{ dragging=true; sx=e.clientX; sy=e.clientY; const r=pop.getBoundingClientRect(); sl=r.left; st=r.top; e.preventDefault(); });
   window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; pop.style.left=(sl+dx)+'px'; pop.style.top=(st+dy)+'px'; pop.style.right='auto'; pop.style.bottom='auto'; });
   window.addEventListener('mouseup', ()=> dragging=false);
 }
 enableDrag('popCalc'); enableDrag('popRef');
 
-document.getElementById('btnCalc').onclick=()=>{ document.getElementById('popCalc').style.display='block'; };
-document.getElementById('btnRef').onclick =()=>{ document.getElementById('popRef').style.display='block'; };
+document.getElementById('btnCalc').onclick=()=>{ const p=document.getElementById('popCalc'); p.style.display='block'; };
+document.getElementById('btnRef').onclick =()=>{ const p=document.getElementById('popRef');  p.style.display='block'; };
 document.querySelector('[data-close="calc"]').onclick=()=>document.getElementById('popCalc').style.display='none';
 document.querySelector('[data-close="ref"]').onclick =()=>document.getElementById('popRef').style.display='none';
 
-/* Reference image */
 document.getElementById('refImg').src = REFERENCE_IMG;
 document.getElementById('refImg').onerror = function(){ this.alt='Reference sheet image not found at '+REFERENCE_IMG; };
 </script>
