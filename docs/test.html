@@ -42,11 +42,9 @@
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
   .calc-iframe{width:100%; height:100%; border:0}
-  .dock{display:flex; gap:10px}
-  .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
-  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
   .figure{margin:8px 0 0}
   .figure img{max-width:100%; height:auto; display:block; margin:0 auto; border-radius:8px; border:1px solid #e8efff}
+  .debugBox{position:fixed; left:16px; bottom:16px; width:420px; max-height:50vh; overflow:auto; background:#0b1020; color:#d7e0ff; border-radius:10px; padding:10px; font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; display:none; white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -94,6 +92,8 @@
   <div id="summary" class="card" style="display:none"></div>
 </main>
 
+<div id="dbg" class="debugBox"></div>
+
 <!-- Pop-outs -->
 <div id="popCalc" class="pop" aria-modal="true">
   <div class="head" data-drag="calc"><span>Desmos Calculator</span><button class="x" data-close="calc">✕</button></div>
@@ -112,37 +112,27 @@
 </div>
 
 <script>
-/* ------------------------------------------------------------------ */
-/* DEBUG switch (show Item ID when ?debug=1)                           */
-/* ------------------------------------------------------------------ */
+/* ------------------------- DEBUG MODE ------------------------------ */
 const DEBUG = new URLSearchParams(location.search).has('debug');
+const dbgBox = document.getElementById('dbg');
+if (DEBUG) dbgBox.style.display = 'block';
+document.addEventListener('keydown', e=>{
+  if(!DEBUG) return;
+  if(e.key.toLowerCase()==='j'){ // toggle raw JSON viewer
+    if(dbgBox.style.display==='none'){ dbgBox.style.display='block'; } else { dbgBox.style.display='none'; }
+  }
+});
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
+/* ------------------------- Helpers -------------------------------- */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
-
-// Escape only when injecting as HTML (we mostly use textContent)
-function escapeHTML(s){
-  return String(s??'')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-
+function escapeHTML(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
-function seededShuffle(arr, seed){
-  const rnd = makeRng(seed); const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;
-}
-
+function seededShuffle(arr, seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function pick(spec,rnd){
   if(!spec) throw new Error('Bad param spec');
   if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
@@ -155,7 +145,7 @@ function pick(spec,rnd){
   throw new Error('Could not sample param (too restrictive).');
 }
 
-/* --------- Templating: variables AND expressions inside {{ ... }} --- */
+/* Template: variables + expressions inside {{ ... }} */
 function evalExpr(expr,scope){
   const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
   if(typeof expr!=='string') return expr;
@@ -166,25 +156,15 @@ function renderTemplate(str, scope){
   if(!str) return '';
   return String(str).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_, inside)=>{
     const expr = inside.trim();
-    if(/^[A-Za-z_]\w*$/.test(expr)){
-      return (expr in scope) ? String(scope[expr]) : `{{${expr}}}`;
-    }
-    try{
-      const v = evalExpr(expr, scope);
-      return (v==null) ? '' : String(v);
-    }catch{
-      return `{{${expr}}}`;
-    }
+    if(/^[A-Za-z_]\w*$/.test(expr)){ return (expr in scope) ? String(scope[expr]) : `{{${expr}}}`; }
+    try{ const v=evalExpr(expr,scope); return (v==null)?'':String(v); } catch { return `{{${expr}}}`; }
   });
 }
 function safeEvalOrLiteral(expr,scope){
   if(typeof expr!=='string') return expr;
   const hasOp=/[+\-*/^()=<>]|Math\./.test(expr);
-  try{
-    if(hasOp) return evalExpr(expr,scope);
-    if(expr in scope) return scope[expr];
-    return expr;
-  }catch{ return expr; }
+  try{ if(hasOp) return evalExpr(expr,scope); if(expr in scope) return scope[expr]; return expr; }
+  catch{ return expr; }
 }
 function formatNumber(x,fmt){
   if(typeof x!=='number' || !isFinite(x)) return x;
@@ -193,107 +173,135 @@ function formatNumber(x,fmt){
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
 
-/* --------- Choices handling ---------------------------------------- */
-function letterToIndex(s){
-  if(typeof s!=='string' || !s) return null;
-  const m = s.trim().match(/^[A-E]/i);
-  return m ? (m[0].toUpperCase().charCodeAt(0)-65) : null;
-}
+/* ------ Choice helpers -------------------------------------------- */
+function letterToIndex(s){ if(typeof s!=='string'||!s) return null; const m=s.trim().match(/^[A-E]/i); return m?(m[0].toUpperCase().charCodeAt(0)-65):null; }
 function splitChoices(raw){
   if(!raw) return [];
-  const text = String(raw).trim();
-  // Try "A. … B. …" inline
-  const rx = /(?:^|\s)([A-E])[\.\)\]]\s+/g;
-  const labels = [];
-  let match;
-  while((match = rx.exec(text))!==null){
-    labels.push({label:match[1], idx: match.index + match[0].length});
-  }
-  if(labels.length){
+  const text=String(raw).trim();
+  const rx=/(?:^|\s)([A-E])[\.\)\]]\s+/g;
+  const labels=[]; let m;
+  while((m=rx.exec(text))!==null){ labels.push({label:m[1], idx:m.index+m[0].length}); }
+  if(labels.length>=2){
     const parts=[];
     for(let i=0;i<labels.length;i++){
-      const start = labels[i].idx;
-      const end = (i+1<labels.length) ? labels[i+1].idx - labels[i+1].label.length - 3 : text.length;
-      parts.push(text.slice(start,end).trim());
+      const start=labels[i].idx;
+      const end=(i+1<labels.length)?labels[i+1].idx-labels[i+1].label.length-3:text.length;
+      const piece=text.slice(start,end).trim();
+      parts.push(piece);
     }
-    return parts;
+    // ensure we didn't just grab empty “B.” “D.” shells
+    if(parts.filter(p=>p.length>0).length>=2) return parts;
   }
-  // Fallback: line-per-choice starting with A./B./C./D.
-  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const lineChoices = lines.filter(s=>/^[A-E][\.\)\]]\s+/.test(s)).map(s=>s.replace(/^[A-E][\.\)\]]\s+/, ''));
-  if(lineChoices.length) return lineChoices;
-  // Last fallback: "||" delimiter
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const lineChoices=lines.filter(s=>/^[A-E][\.\)\]]\s+/.test(s)).map(s=>s.replace(/^[A-E][\.\)\]]\s+/, ''));
+  if(lineChoices.length>=2) return lineChoices;
   if(text.includes('||')) return text.split('||').map(s=>s.trim());
   return [text];
 }
 function extractInlineChoicesFromStem(stemText){
-  const rx = /(?:^|\s)([A-D])[\.\)\]]\s+/;
-  const m = rx.exec(stemText);
+  const rx=/(?:^|\s)([A-D])[\.\)\]]\s+/;
+  const m=rx.exec(stemText);
   if(!m) return null;
-  const idxStart = m.index;
-  const before = stemText.slice(0, idxStart).trim();
-  const tail = stemText.slice(idxStart).trim();
-  const choices = splitChoices(tail);
-  return { stem: before, choices };
+  const before=stemText.slice(0,m.index).trim();
+  const tail=stemText.slice(m.index).trim();
+  const choices=splitChoices(tail);
+  if(choices.length>=2 && choices.some(c=>c.length>0)) return {stem:before, choices};
+  return null;
 }
 
-/* --------- Item generation ----------------------------------------- */
+/* Collect choices from many possible fields (A/B/C/D, choiceA, etc.) */
+function collectChoicesFromObject(obj, scope){
+  if(!obj||typeof obj!=='object') return null;
+
+  // Common direct containers
+  const containerKeys=['choices','options','answers','answerChoices','choiceList','optionsList','choicesInline','allChoicesInline','rawChoices','choicesRaw'];
+  for(const k of containerKeys){
+    if(obj[k]!=null){
+      if(Array.isArray(obj[k])) return obj[k].map(c=>renderTemplate(String(c),scope));
+      if(typeof obj[k]==='string' && obj[k].trim()) return splitChoices(renderTemplate(obj[k],scope));
+    }
+  }
+
+  // A/B/C/D/E style
+  const labelSets=[['A','B','C','D','E']];
+  const patternMakers=[
+    L=>L, L=>'choice'+L, L=>'option'+L, L=>'opt'+L, L=>'ans'+L,
+    L=>L+'_text', L=>L+'Text', L=>L.toLowerCase(), L=>'choice_'+L, L=>'option_'+L
+  ];
+
+  for(const labels of labelSets){
+    const out=[];
+    for(const L of labels){
+      let found=null;
+      for(const mk of patternMakers){
+        const key=mk(L);
+        if(Object.prototype.hasOwnProperty.call(obj,key) && obj[key]!=null && obj[key]!==''){
+          found=renderTemplate(String(obj[key]),scope); break;
+        }
+      }
+      if(found!=null) out.push(found);
+    }
+    if(out.filter(Boolean).length>=2) return out;
+  }
+  return null;
+}
+
+/* ---------------------- Item generation --------------------------- */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[] } = template;
-  const fmt = template.format || template.display || null;
+  const fmt=template.format||template.display||null;
   const MAX=250;
 
-  // Build variable scope first
+  // Build a scope upfront for templated text
   const P={}, D={};
   for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
   for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{} }
   const scope={...P,...D};
 
-  // Static-choice style (scan many aliases)
-  const choiceField = ['choices','options','answers','answerChoices','choiceList','optionsList','choicesInline','allChoicesInline','rawChoices','choicesRaw']
-    .find(f => template[f]!=null);
-  if(choiceField){
-    let choices = Array.isArray(template[choiceField])
-      ? template[choiceField].map(c=>renderTemplate(String(c),scope))
-      : splitChoices(renderTemplate(String(template[choiceField]),scope));
+  // 1) Static choice style via explicit fields
+  let choices = collectChoicesFromObject(template, scope);
+  if(!choices){
+    // 2) or pull from stem if inline A./B./C./D.
+    const stemPlain = renderTemplate(stem, scope);
+    const pulled = extractInlineChoicesFromStem(stemPlain);
+    if(pulled){ choices = pulled.choices; }
+  }
 
-    let stemText = renderTemplate(stem, scope);
-    if((!choices || choices.length<2) && stemText){
-      const pulled = extractInlineChoicesFromStem(stemText);
-      if(pulled){ stemText = pulled.stem; choices = pulled.choices; }
+  if(choices && choices.length>=2){
+    const stemText = renderTemplate(stem, scope);
+    // If we pulled inline, use the trimmed stem part
+    const inline = extractInlineChoicesFromStem(stemText);
+    const finalStem = inline ? inline.stem : stemText;
+
+    // find correct index (index, letter, or exact text)
+    let idx=null;
+    for(const f of ['answerIndex','correctIndex','keyIndex']){
+      if(template[f]!=null){ const v=Number(template[f]); if(Number.isFinite(v)) { idx=v; break; } }
     }
-
-    let idx = null;
-    const idxFields = ['answerIndex','correctIndex','keyIndex'];
-    for(const f of idxFields){ if(template[f]!=null){ const v=Number(template[f]); if(Number.isFinite(v)) { idx=v; break; } } }
-    const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
     if(idx==null){
-      for(const f of letterFields){
+      for(const f of ['answer','correct','key','solution','answerKey','correctChoice','correctLetter']){
         if(template[f]!=null){
-          const li = letterToIndex(String(template[f]));
-          if(li!=null){ idx=li; break; }
-          const txt = String(template[f]).trim();
-          const j = choices.findIndex(c => String(c).trim()===txt);
-          if(j>=0){ idx=j; break; }
+          const val=String(template[f]).trim();
+          const li=letterToIndex(val); if(li!=null){ idx=li; break; }
+          const j=choices.findIndex(c=>String(c).trim()===val); if(j>=0){ idx=j; break; }
         }
       }
     }
-    if(idx!=null && idx>=1 && idx<=5 && idx>choices.length-1) idx = idx-1;
-    if(idx==null || !(idx>=0 && idx<choices.length)) idx = 0;
+    if(idx!=null && idx>=1 && idx<=5 && idx>choices.length-1) idx=idx-1;
+    if(!(idx>=0 && idx<choices.length)) idx=0;
 
     return {
-      stem: stemText,
+      stem: finalStem,
       answer: choices[idx],
       distractors: choices.filter((_,i)=>i!==idx),
       figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null
     };
   }
 
-  // Parametric / numeric style
+  // 3) Parametric / numeric generator (with auto-distractors)
   for(let attempt=0;attempt<MAX;attempt++){
-    const P2={...P}, D2={};
-    let okDer=true;
+    const P2={...P}, D2={}; let okDer=true;
     for(const[k,e] of Object.entries(derived||{})){ try{ D2[k]=evalExpr(e,{...P2,...D2}); } catch{ okDer=false; break; } }
     if(!okDer) continue;
 
@@ -304,38 +312,38 @@ function generateItem(template, seed='demo'){
     const scope2={...P2,...D2};
     const stemText = renderTemplate(stem, scope2);
 
-    let ans = formatNumber(safeEvalOrLiteral(template.answer,scope2), fmt);
+    let ans=formatNumber(safeEvalOrLiteral(template.answer,scope2),fmt);
     let opts=[];
     for(const d of (template.distractors||[])){
-      let v = formatNumber(safeEvalOrLiteral(d,{...scope2,ans}), fmt);
+      let v=formatNumber(safeEvalOrLiteral(d,{...scope2,ans}),fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
 
-    const pulled = extractInlineChoicesFromStem(stemText);
-    if(opts.length<3 && pulled && pulled.choices.length>=2){
-      const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
-      let idx = null;
-      for(const f of letterFields){
+    // Try inline choices even for parametric if present
+    const pulled=extractInlineChoicesFromStem(stemText);
+    if(pulled && pulled.choices.length>=2){
+      let idx=null;
+      for(const f of ['answer','correct','key','solution','answerKey','correctChoice','correctLetter']){
         if(template[f]!=null){
-          const li = letterToIndex(String(template[f]));
+          const li=letterToIndex(String(template[f]));
           if(li!=null){ idx=li; break; }
-          const txt = String(template[f]).trim();
-          const j = pulled.choices.findIndex(c => String(c).trim()===txt);
+          const txt=String(template[f]).trim();
+          const j=pulled.choices.findIndex(c=>String(c).trim()===txt);
           if(j>=0){ idx=j; break; }
         }
       }
-      if(idx==null) idx = 0;
+      if(idx==null) idx=0;
       return { stem: pulled.stem, answer: pulled.choices[idx], distractors: pulled.choices.filter((_,i)=>i!==idx),
         figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null };
     }
 
     if(typeof ans==='number' && opts.length<3){
-      const used=new Set([String(ans), ...opts.map(String)]);
-      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
-      const candidates=[ ans+mag, ans-mag, Math.floor(ans), Math.ceil(ans), ans*1.1, ans*0.9 ];
+      const used=new Set([String(ans),...opts.map(String)]);
+      const mag=Math.max(1e-6,Math.pow(10,Math.floor(Math.log10(Math.abs(ans)||1))-1));
+      const candidates=[ans+mag,ans-mag,Math.floor(ans),Math.ceil(ans),ans*1.1,ans*0.9];
       for(const c of candidates){
         const v=formatNumber(c,fmt);
-        if(!Number.isNaN(v) && !used.has(String(v))){ opts.push(v); used.add(String(v)); if(opts.length>=3) break; }
+        if(!Number.isNaN(v)&&!used.has(String(v))){ opts.push(v); used.add(String(v)); if(opts.length>=3) break; }
       }
       const padRnd=makeRng(seed+':auto');
       while(opts.length<3){
@@ -354,276 +362,170 @@ function generateItem(template, seed='demo'){
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
 
-/* ------------------------------------------------------------------ */
-/* Data loading + session seed                                         */
-/* ------------------------------------------------------------------ */
+/* ---------------------- Data + session seed ------------------------ */
 const FILES={ HOA:'data/MASTER_HOA_SAT.json', PAM:'data/MASTER_PAM_SAT.json', PSDA:'data/MASTER_PSDA_SAT.json', GEOT:'data/MASTER_GEOT_SAT.json' };
-const REFERENCE_IMG = 'data/sat-reference.jpg';
+const REFERENCE_IMG='data/sat-reference.jpg';
 
 const qs=new URLSearchParams(location.search);
-const sessionSeed = qs.get('seed') || (()=>{ try{const a=new Uint32Array(2); crypto.getRandomValues(a); return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);} catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);} })();
-if(!qs.get('seed')){ qs.set('seed', sessionSeed); history.replaceState(null,'',location.pathname+'?'+qs.toString()); }
+const sessionSeed=qs.get('seed')||(()=>{try{const a=new Uint32Array(2);crypto.getRandomValues(a);return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);}catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);}})();
+if(!qs.get('seed')){qs.set('seed',sessionSeed);history.replaceState(null,'',location.pathname+'?'+qs.toString());}
 document.getElementById('seedEcho').textContent='Seed: '+sessionSeed;
 
 async function loadAll(){
-  const names=Object.keys(FILES);
-  const all=[];
-  for(const n of names){
-    const resp = await fetch(FILES[n], {cache:'no-store'});
-    if(!resp.ok) throw new Error('Failed to load '+n);
-    const arr = await resp.json();
-    all.push(...arr);
-  }
+  const names=Object.keys(FILES); const all=[];
+  for(const n of names){ const resp=await fetch(FILES[n],{cache:'no-store'}); if(!resp.ok) throw new Error('Failed to load '+n); const arr=await resp.json(); all.push(...arr); }
   return all;
 }
 
-/* ------------------------------------------------------------------ */
-/* Test engine                                                         */
-/* ------------------------------------------------------------------ */
-const MODULE_TIME = 35*60;
-const BRANCH_THRESHOLD = 14;
-const BLUEPRINT = { M1:{E:7,M:10,H:5}, M2easy:{E:9,M:11,H:2}, M2hard:{E:3,M:12,H:7} };
+/* ------------------------- Test engine ----------------------------- */
+const MODULE_TIME=35*60, BRANCH_THRESHOLD=14;
+const BLUEPRINT={ M1:{E:7,M:10,H:5}, M2easy:{E:9,M:11,H:2}, M2hard:{E:3,M:12,H:7} };
 
-let pool={E:[],M:[],H:[]};
-let usedIds=new Set();
-
+let pool={E:[],M:[],H:[]}, usedIds=new Set();
 let state={ module:1, items:[], gens:[], answers:new Map(), idx:0, timer:null, remaining:MODULE_TIME, route:'easy' };
 
-function splitByDifficulty(all){
-  return { E: all.filter(x=>(x.difficulty||'M')==='E'),
-           M: all.filter(x=>(x.difficulty||'M')==='M'),
-           H: all.filter(x=>(x.difficulty||'M')==='H') };
+function splitByDifficulty(all){return{E:all.filter(x=>(x.difficulty||'M')==='E'),M:all.filter(x=>(x.difficulty||'M')==='M'),H:all.filter(x=>(x.difficulty||'M')==='H')};}
+function takeUnique(arr,n,tag){const rnd=makeRng(tag);const a=arr.filter(x=>!usedIds.has(x.id));const sh=a.slice();for(let i=sh.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]];}return sh.slice(0,n);}
+function buildModule(which,branchTag){
+  const bp=(which===1)?BLUEPRINT.M1:(branchTag==='hard'?BLUEPRINT.M2hard:BLUEPRINT.M2easy);
+  const tagBase=`m${which}:${branchTag}:${sessionSeed}`;
+  const items=[...takeUnique(pool.E,bp.E,tagBase+':E'),...takeUnique(pool.M,bp.M,tagBase+':M'),...takeUnique(pool.H,bp.H,tagBase+':H')];
+  const ordered=seededShuffle(items,tagBase+':order'); ordered.forEach(it=>{ if(it.id) usedIds.add(it.id); }); return ordered;
 }
-function takeUnique(arr, n, tag){
-  const rnd=makeRng(tag);
-  const a = arr.filter(x=>!usedIds.has(x.id));
-  const sh = a.slice();
-  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
-  return sh.slice(0, n);
-}
-function buildModule(which, branchTag){
-  const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
-  const tagBase = `m${which}:${branchTag}:${sessionSeed}`;
-  const pickE = takeUnique(pool.E, bp.E, tagBase+':E');
-  const pickM = takeUnique(pool.M, bp.M, tagBase+':M');
-  const pickH = takeUnique(pool.H, bp.H, tagBase+':H');
-  const items=[...pickE, ...pickM, ...pickH];
-  const ordered = seededShuffle(items, tagBase+':order');
-  ordered.forEach(it=>{ if(it.id) usedIds.add(it.id); });
-  return ordered;
-}
-function generateModuleItems(items, which, branchTag){
-  const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
-  return items.map((it,i)=> generateItem(it.template, `${seedBase}:${it.id||i}`));
-}
+function generateModuleItems(items,which,branchTag){const base=`module${which}:${branchTag}:${sessionSeed}`;return items.map((it,i)=>generateItem(it.template,`${base}:${it.id||i}`));}
 
 function startTimer(){
   clearInterval(state.timer);
-  const el = document.getElementById('hdrTimer');
-  function render(){
-    const m=Math.floor(state.remaining/60), s=state.remaining%60;
-    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  }
+  const el=document.getElementById('hdrTimer');
+  function render(){const m=Math.floor(state.remaining/60),s=state.remaining%60;el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
   render();
-  state.timer=setInterval(()=>{
-    state.remaining--;
-    if(state.remaining<=0){ clearInterval(state.timer); submitModule(); }
-    else render();
-  }, 1000);
+  state.timer=setInterval(()=>{state.remaining--; if(state.remaining<=0){clearInterval(state.timer); submitModule();} else render();},1000);
 }
-function firstNonNull(...vals){ for(const v of vals){ if(v!==undefined && v!==null && v!=='') return v; } return null; }
+function firstNonNull(...vals){for(const v of vals){if(v!==undefined&&v!==null&&v!=='')return v;}return null;}
 
 function show(idx){
-  const total = state.gens.length;
-  state.idx = Math.max(0, Math.min(idx, total-1));
-  const g = state.gens[state.idx];
-  const t = state.items[state.idx];
+  const total=state.gens.length;
+  state.idx=Math.max(0,Math.min(idx,total-1));
+  const g=state.gens[state.idx];
+  const t=state.items[state.idx];
 
   document.getElementById('intro').style.display='none';
   document.getElementById('qCard').style.display='';
   document.getElementById('summary').style.display='none';
 
-  // --- DEBUG label with Item ID ---
-  const idText = t.id || t.template?.id || t.template?.sourceId || t.template?.ID || '';
-  const label = DEBUG && idText
-    ? `Q ${state.idx+1} of ${total} • ID ${idText}`
-    : `Q ${state.idx+1} of ${total}`;
-  document.getElementById('qNum').textContent = label;
+  const idText=t.id||t.template?.id||t.template?.sourceId||t.template?.ID||'';
+  document.getElementById('qNum').textContent = DEBUG && idText ? `Q ${state.idx+1} of ${total} • ID ${idText}` : `Q ${state.idx+1} of ${total}`;
 
   document.getElementById('qStem').textContent = g.stem;
 
-  // Figure/diagram support
-  const figUrl = firstNonNull(g.figure, t.figure, t.image, t.img, t.diagram, t.figureUrl, t.imageUrl);
-  const figWrap = document.getElementById('qFigure');
-  figWrap.innerHTML = '';
-  if(figUrl){
-    const img = document.createElement('img');
-    img.alt = 'Question diagram';
-    img.src = figUrl;
-    figWrap.appendChild(img);
-    figWrap.style.display='';
-  }else{
-    figWrap.style.display='none';
-  }
+  const figUrl=firstNonNull(g.figure,t.figure,t.image,t.img,t.diagram,t.figureUrl,t.imageUrl);
+  const figWrap=document.getElementById('qFigure'); figWrap.innerHTML=''; if(figUrl){const img=document.createElement('img'); img.alt='Question diagram'; img.src=figUrl; figWrap.appendChild(img); figWrap.style.display='';} else {figWrap.style.display='none';}
 
-  const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
-  const chosen = state.answers.get(state.idx) ?? null;
-  const wrap = document.getElementById('qChoices');
-  wrap.innerHTML='';
+  const opts=seededShuffle([g.answer,...g.distractors],`opts:${sessionSeed}:${state.module}:${state.idx}`);
+  const chosen=state.answers.get(state.idx)??null;
+  const wrap=document.getElementById('qChoices'); wrap.innerHTML='';
   opts.forEach((o,i)=>{
     const id=`opt${state.idx}_${i}`;
-    const label=document.createElement('label');
-    label.className='choice';
-
-    const input=document.createElement('input');
-    input.type='radio'; input.name=`q${state.idx}`; input.id=id; input.value=String(o);
-
-    const span=document.createElement('span');
-    span.textContent = String(o);
-
+    const label=document.createElement('label'); label.className='choice';
+    const input=document.createElement('input'); input.type='radio'; input.name=`q${state.idx}`; input.id=id; input.value=String(o);
+    const span=document.createElement('span'); span.textContent=String(o);
     if(chosen!==null && String(chosen)===String(o)) input.checked=true;
-    input.addEventListener('change',()=> state.answers.set(state.idx, String(o)) );
-
-    label.appendChild(input);
-    label.appendChild(span);
-    wrap.appendChild(label);
+    input.addEventListener('change',()=>state.answers.set(state.idx,String(o)));
+    label.appendChild(input); label.appendChild(span); wrap.appendChild(label);
   });
+
+  if (DEBUG){
+    const snapshot = {rawItem:t, generated:g};
+    dbgBox.textContent = JSON.stringify(snapshot, null, 2);
+  }
 
   document.getElementById('btnPrev').disabled = state.idx===0;
-  const last = state.idx===total-1;
-  document.getElementById('btnNext').style.display = last? 'none': '';
-  document.getElementById('btnSubmitModule').style.display = last? '': 'none';
+  const last=state.idx===total-1;
+  document.getElementById('btnNext').style.display=last?'none':'';
+  document.getElementById('btnSubmitModule').style.display=last?'':'none';
 }
 
-function scoreModule(){
-  let correct=0;
-  state.gens.forEach((g,i)=>{
-    const a = state.answers.get(i);
-    if(String(a)===String(g.answer)) correct++;
-  });
-  return correct;
-}
+function scoreModule(){let correct=0; state.gens.forEach((g,i)=>{const a=state.answers.get(i); if(String(a)===String(g.answer)) correct++;}); return correct;}
 
 function submitModule(){
   clearInterval(state.timer);
-  const correct = scoreModule();
-  const total = state.gens.length;
+  const correct=scoreModule(), total=state.gens.length;
+  const sum=document.getElementById('summary'); sum.style.display=''; document.getElementById('qCard').style.display='none';
+  const branch=(state.module===1)?(correct>=BRANCH_THRESHOLD?'hard':'easy'):state.route;
 
-  const sum = document.getElementById('summary');
-  sum.style.display='';
-  document.getElementById('qCard').style.display='none';
-
-  const branch = (state.module===1)
-    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
-    : state.route;
-
-  sum.innerHTML =
-    `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>
-     <p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>
-     <p class="tiny">Seed: <code>${escapeHTML(sessionSeed)}</code></p>` +
+  sum.innerHTML = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>
+    <p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>
+    <p class="tiny">Seed: <code>${escapeHTML(sessionSeed)}</code></p>` +
     (state.module===1
       ? `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>
          <div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`
       : `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
-           <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`
-    );
+           <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`);
 
   if(state.module===1){
-    state.route = branch;
-    document.getElementById('btnBeginM2').onclick = () => beginModule2();
+    state.route=branch;
+    document.getElementById('btnBeginM2').onclick=()=>beginModule2();
   }else{
-    document.getElementById('btnNew').onclick = ()=>{
-      const u=new URL(location.href);
-      u.searchParams.delete('seed'); location.href=u.toString();
-    };
-    document.getElementById('btnReview').onclick = ()=> reviewAnswers();
+    document.getElementById('btnNew').onclick=()=>{const u=new URL(location.href); u.searchParams.delete('seed'); location.href=u.toString();};
+    document.getElementById('btnReview').onclick=()=>reviewAnswers();
   }
 }
-
 function reviewAnswers(){
-  const sum = document.getElementById('summary');
-  sum.style.display='';
-  sum.innerHTML = '<h2 style="margin:0 0 8px;">Module 2 — Review</h2>';
-
+  const sum=document.getElementById('summary'); sum.style.display='';
+  sum.innerHTML='<h2 style="margin:0 0 8px;">Module 2 — Review</h2>';
   state.gens.forEach((g,i)=>{
-    const your = state.answers.get(i);
-    const ok = String(your)===String(g.answer);
-    sum.innerHTML +=
-      `<div style="padding:10px 0;border-top:1px solid #eef3ff">
-         <div class="tiny">Q ${i+1}</div>
-         <div>${escapeHTML(g.stem)}</div>
-         <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${escapeHTML(your??'—')} • Correct: ${escapeHTML(g.answer)}</div>
-       </div>`;
+    const your=state.answers.get(i), ok=String(your)===String(g.answer);
+    sum.innerHTML+=`<div style="padding:10px 0;border-top:1px solid #eef3ff">
+      <div class="tiny">Q ${i+1}</div>
+      <div>${escapeHTML(g.stem)}</div>
+      <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${escapeHTML(your??'—')} • Correct: ${escapeHTML(g.answer)}</div>
+    </div>`;
   });
-  sum.innerHTML += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
+  sum.innerHTML+=`<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
 }
 
+/* ---------------------------- Start/Build -------------------------- */
 async function beginModule1(){
   document.getElementById('hdrModule').textContent='Module 1';
   document.getElementById('status').textContent='Loading question bank…';
 
-  const all = await loadAll();
-  pool = splitByDifficulty(all);
-
+  const all=await loadAll(); pool=splitByDifficulty(all);
   usedIds.clear();
-  state.module=1;
-  state.answers = new Map();
-  state.remaining = MODULE_TIME;
+  state.module=1; state.answers=new Map(); state.remaining=MODULE_TIME;
+  state.items=buildModule(1,'base'); state.gens=generateModuleItems(state.items,1,'base');
 
-  state.items = buildModule(1,'base');
-  state.gens  = generateModuleItems(state.items, 1, 'base');
-
-  document.getElementById('status').textContent='Module 1 ready.';
-  show(0);
-  startTimer();
+  document.getElementById('status').textContent='Module 1 ready.'; show(0); startTimer();
 }
-
 function beginModule2(){
   document.getElementById('hdrModule').textContent='Module 2';
   document.getElementById('status').textContent='Building Module 2…';
 
-  state.module=2;
-  state.answers = new Map();
-  state.remaining = MODULE_TIME;
+  state.module=2; state.answers=new Map(); state.remaining=MODULE_TIME;
+  state.items=buildModule(2,state.route); state.gens=generateModuleItems(state.items,2,state.route);
 
-  state.items = buildModule(2, state.route);
-  state.gens  = generateModuleItems(state.items, 2, state.route);
-
-  document.getElementById('status').textContent='Module 2 ready.';
-  show(0);
-  startTimer();
+  document.getElementById('status').textContent='Module 2 ready.'; show(0); startTimer();
 }
 
-/* ------------------------------------------------------------------ */
-/* UI wiring                                                           */
-/* ------------------------------------------------------------------ */
+/* ---------------------------- UI wiring ---------------------------- */
 document.getElementById('btnStart').addEventListener('click', beginModule1);
 document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
 document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
 document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
 
-/* ------------------------------------------------------------------ */
-/* Pop-out windows (drag via header only)                              */
-/* ------------------------------------------------------------------ */
-function enableDrag(popId){
-  const pop=document.getElementById(popId);
-  const head = pop.querySelector('.head');
-  let dragging=false, sx=0, sy=0, sl=0, st=0;
-
-  head.addEventListener('mousedown', (e)=>{ dragging=true; sx=e.clientX; sy=e.clientY; const r=pop.getBoundingClientRect(); sl=r.left; st=r.top; e.preventDefault(); });
-  window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; pop.style.left=(sl+dx)+'px'; pop.style.top=(st+dy)+'px'; pop.style.right='auto'; pop.style.bottom='auto'; });
-  window.addEventListener('mouseup', ()=> dragging=false);
-}
+/* ---------------------------- Pop-outs ----------------------------- */
+function enableDrag(id){const pop=document.getElementById(id), head=pop.querySelector('.head'); let drag=false,sx=0,sy=0,sl=0,st=0;
+  head.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sy=e.clientY;const r=pop.getBoundingClientRect();sl=r.left;st=r.top;e.preventDefault();});
+  window.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-sx,dy=e.clientY-sy;pop.style.left=(sl+dx)+'px';pop.style.top=(st+dy)+'px';pop.style.right='auto';pop.style.bottom='auto';});
+  window.addEventListener('mouseup',()=>drag=false);}
 enableDrag('popCalc'); enableDrag('popRef');
 
-document.getElementById('btnCalc').onclick=()=>{ document.getElementById('popCalc').style.display='block'; };
-document.getElementById('btnRef').onclick =()=>{ document.getElementById('popRef').style.display='block'; };
+document.getElementById('btnCalc').onclick=()=>{document.getElementById('popCalc').style.display='block';};
+document.getElementById('btnRef').onclick =()=>{document.getElementById('popRef').style.display='block';};
 document.querySelector('[data-close="calc"]').onclick=()=>document.getElementById('popCalc').style.display='none';
 document.querySelector('[data-close="ref"]').onclick =()=>document.getElementById('popRef').style.display='none';
 
-// load reference image
-document.getElementById('refImg').src = REFERENCE_IMG;
-document.getElementById('refImg').onerror = function(){ this.alt='Reference sheet image not found at '+REFERENCE_IMG; };
+document.getElementById('refImg').src=REFERENCE_IMG;
+document.getElementById('refImg').onerror=function(){this.alt='Reference sheet image not found at '+REFERENCE_IMG;};
 </script>
 </body>
 </html>
