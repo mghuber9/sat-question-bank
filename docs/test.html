@@ -232,18 +232,12 @@ function generateItem(template, seed='demo'){
 /* ------------------------------------------------------------------ */
 /* Data loading + session seed                                         */
 /* ------------------------------------------------------------------ */
-const FILES = {
-  HOA: '/data/CLEAN_HOA_SAT.json',
-  PAM: '/data/CLEAN_PAM_SAT.json',
-  PSDA: '/data/CLEAN_PSDA_SAT.json',
-  GEOT:'/data/CLEAN_GEOT_SAT.json'
-};
 
-// reference image (root-absolute so it works from /docs/)
-const REFERENCE_IMG = '/data/sat-reference.jpg';
 
-const url = new URL(window.location.href);
-const qs = url.searchParams;
+/* ------------------------------------------------------------------ */
+/* Data loading + session seed (Codespaces-safe)                       */
+/* ------------------------------------------------------------------ */
+const qs = new URLSearchParams(window.location.search);
 
 const sessionSeed =
   qs.get('seed') ||
@@ -261,17 +255,11 @@ const sessionSeed =
     }
   })();
 
-if (!qs.has('seed')) {
-  qs.set('seed', sessionSeed);
-  try {
-    history.replaceState(null, '', url.toString()); // absolute, same-origin
-  } catch (err) {
-    console.warn('replaceState skipped:', err); // ignore in Codespaces
-  }
-}
-  
+// We purposefully do NOT call history.replaceState in Codespaces to avoid warnings.
+document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
 
-document.getElementById('seedEcho').textContent='Seed: '+sessionSeed;
+
+  
 
 async function loadAll(){
   const names=Object.keys(FILES);
