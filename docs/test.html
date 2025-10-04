@@ -120,7 +120,7 @@ window.addEventListener('error', e=>{
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
-// escape only when injecting as HTML (we mostly use textContent)
+// Escape only when injecting as HTML (we mostly use textContent)
 function escapeHTML(s){
   return String(s??'')
     .replace(/&/g,'&amp;')
@@ -149,12 +149,28 @@ function pick(spec,rnd){
   }
   throw new Error('Could not sample param (too restrictive).');
 }
-function renderStem(stem,vars){return String(stem||'').replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+
+/* --------- Templating: variables AND expressions inside {{ ... }} --- */
 function evalExpr(expr,scope){
   const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
   if(typeof expr!=='string') return expr;
   if(/[;{}\[\]]|new|class|function|=>|import|export|process|global|window/i.test(expr)) throw new Error('Unsafe expression: '+expr);
   return Function(...keys,'"use strict"; return ('+expr+');')(...vals);
+}
+function renderTemplate(str, scope){
+  if(!str) return '';
+  return String(str).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_, inside)=>{
+    const expr = inside.trim();
+    if(/^[A-Za-z_]\w*$/.test(expr)){
+      return (expr in scope) ? String(scope[expr]) : `{{${expr}}}`;
+    }
+    try{
+      const v = evalExpr(expr, scope);
+      return (v==null) ? '' : String(v);
+    }catch{
+      return `{{${expr}}}`;
+    }
+  });
 }
 function safeEvalOrLiteral(expr,scope){
   if(typeof expr!=='string') return expr;
@@ -172,7 +188,7 @@ function formatNumber(x,fmt){
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
 
-/* ---- robust choice handling -------------------------------------- */
+/* --------- Choices handling ---------------------------------------- */
 function letterToIndex(s){
   if(typeof s!=='string' || !s) return null;
   const m = s.trim().match(/^[A-E]/i);
@@ -201,92 +217,124 @@ function splitChoices(raw){
   const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   const lineChoices = lines.filter(s=>/^[A-E][\.\)\]]\s+/.test(s)).map(s=>s.replace(/^[A-E][\.\)\]]\s+/, ''));
   if(lineChoices.length) return lineChoices;
-  // last fallback: comma separated
+  // Last fallback: "||" delimiter
   if(text.includes('||')) return text.split('||').map(s=>s.trim());
   return [text];
 }
 
-/* ---- generate item ----------------------------------------------- */
+/* Extract inline choices from the STEM itself */
+function extractInlineChoicesFromStem(stemText){
+  const rx = /(?:^|\s)([A-D])[\.\)\]]\s+/;
+  const m = rx.exec(stemText);
+  if(!m) return null;
+  const idxStart = m.index;
+  const before = stemText.slice(0, idxStart).trim();
+  const tail = stemText.slice(idxStart).trim();
+  const choices = splitChoices(tail);
+  return { stem: before, choices };
+}
+
+/* --------- Item generation ----------------------------------------- */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[] } = template;
   const fmt = template.format || template.display || null;
   const MAX=250;
 
-  // detect a static-choice template up front
-  const hasArrayChoices = Array.isArray(template.choices) && template.choices.length>=2;
-  const hasInlineChoices = !hasArrayChoices && typeof template.choicesRaw==='string' && template.choicesRaw.trim();
+  // Build variable scope first (so we can render templated stems/choices)
+  const P={}, D={};
+  for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
+  for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ /* ignore here; parametric branch handles */ } }
+  const scope={...P,...D};
 
-  if(hasArrayChoices || hasInlineChoices){
-    // 1) build variable scope (for templated stems/choices if needed)
-    const P={}, D={};
-    for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
-    let okDer=true;
-    for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
-    if(!okDer) throw new Error('Derived error in static choice item');
+  /* ---- 1) Static choice style (many field-name possibilities) ---- */
+  const choiceField = ['choices','options','answers','answerChoices','choiceList','optionsList','choicesInline','allChoicesInline','rawChoices','choicesRaw']
+    .find(f => template[f]!=null);
+  if(choiceField){
+    let choices = Array.isArray(template[choiceField])
+      ? template[choiceField].map(c=>renderTemplate(String(c),scope))
+      : splitChoices(renderTemplate(String(template[choiceField]),scope));
 
-    const scope={...P,...D};
-    const stemText = renderStem(stem,scope);
+    // If choices weren’t provided but stem contains inline choices, extract from stem.
+    let stemText = renderTemplate(stem, scope);
+    if((!choices || choices.length<2) && stemText){
+      const pulled = extractInlineChoicesFromStem(stemText);
+      if(pulled){ stemText = pulled.stem; choices = pulled.choices; }
+    }
 
-    // 2) choices
-    let choices = hasArrayChoices
-      ? template.choices.map(c=>renderStem(String(c),scope))
-      : splitChoices(renderStem(template.choicesRaw,scope));
-
-    // 3) correct answer index (supports index or letter)
+    // Determine correct index (index or letter or exact text)
     let idx = null;
-
-    // Prefer explicit numeric index fields
     const idxFields = ['answerIndex','correctIndex','keyIndex'];
     for(const f of idxFields){
-      if(template[f]!=null){
-        idx = Number(template[f]);
-        if(isFinite(idx) && idx>=0 && idx<choices.length) break;
-        if(isFinite(idx) && idx===1 && choices.length===1) break;
-      }
+      if(template[f]!=null){ const v = Number(template[f]); if(Number.isFinite(v)) { idx=v; break; } }
     }
-    // letter fields
-    if(idx===null){
-      const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
+    const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
+    if(idx==null){
       for(const f of letterFields){
         if(template[f]!=null){
-          const maybeLetter = String(template[f]);
-          const li = letterToIndex(maybeLetter);
-          if(li!=null){ idx = li; break; }
-          // maybe the full text was provided
-          const j = choices.findIndex(c => String(c).trim()===maybeLetter.trim());
+          const li = letterToIndex(String(template[f]));
+          if(li!=null){ idx=li; break; }
+          const txt = String(template[f]).trim();
+          const j = choices.findIndex(c => String(c).trim()===txt);
           if(j>=0){ idx=j; break; }
         }
       }
     }
-    // allow 1-based index
-    if(idx!=null && idx>=1 && idx>choices.length-1 && choices.length>=4 && idx<=5) idx = idx-1;
+    // allow 1-based
+    if(idx!=null && idx>=1 && idx<=5 && idx>choices.length-1) idx = idx-1;
+    if(idx==null || !(idx>=0 && idx<choices.length)) idx = 0;
 
-    if(idx==null || !(idx>=0 && idx<choices.length)){
-      // best effort: assume first is correct if not specified
-      idx = 0;
-    }
-
-    const ans = choices[idx];
-    const distractors = choices.filter((_,i)=>i!==idx);
-    return { stem:stemText, answer:ans, distractors, figure: template.figure||template.image||template.img||template.diagram||null };
+    return {
+      stem: stemText,
+      answer: choices[idx],
+      distractors: choices.filter((_,i)=>i!==idx),
+      figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null
+    };
   }
 
-  // Parametric/numeric style (your original generator)
+  /* ---- 2) Parametric / numeric style ----------------------------- */
   for(let attempt=0;attempt<MAX;attempt++){
-    const P={}; for(const[k,s] of Object.entries(params||{})) P[k]=pick(s,rnd);
-    const D={}; let okDer=true;
-    for(const[k,e] of Object.entries(derived||{})){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
+    // recompute derived using robust try
+    const P2={...P}, D2={};
+    let okDer=true;
+    for(const[k,e] of Object.entries(derived||{})){ try{ D2[k]=evalExpr(e,{...P2,...D2}); } catch{ okDer=false; break; } }
     if(!okDer) continue;
+
     let ok=true;
-    for(const c of (constraints||[])){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } } catch{ ok=false; break; } }
+    for(const c of (constraints||[])){ try{ if(!evalExpr(c,{...P2,...D2})) { ok=false; break; } } catch{ ok=false; break; } }
     if(!ok) continue;
-    let ans = formatNumber(safeEvalOrLiteral(template.answer,{...P,...D}), fmt);
-    const opts=[];
+
+    const scope2={...P2,...D2};
+    const stemText = renderTemplate(stem, scope2);
+
+    let ans = formatNumber(safeEvalOrLiteral(template.answer,scope2), fmt);
+    let opts=[];
     for(const d of (template.distractors||[])){
-      let v = formatNumber(safeEvalOrLiteral(d,{...P,...D,ans}), fmt);
+      let v = formatNumber(safeEvalOrLiteral(d,{...scope2,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
+
+    // If still no choices and the stem itself has inline A/B/C/D, pull them out
+    if(opts.length<3){
+      const pulled = extractInlineChoicesFromStem(stemText);
+      if(pulled && pulled.choices.length>=2){
+        const letterFields = ['answer','correct','key','solution','answerKey','correctChoice','correctLetter'];
+        let idx = null;
+        for(const f of letterFields){
+          if(template[f]!=null){
+            const li = letterToIndex(String(template[f]));
+            if(li!=null){ idx=li; break; }
+            const txt = String(template[f]).trim();
+            const j = pulled.choices.findIndex(c => String(c).trim()===txt);
+            if(j>=0){ idx=j; break; }
+          }
+        }
+        if(idx==null) idx = 0;
+        return { stem: pulled.stem, answer: pulled.choices[idx], distractors: pulled.choices.filter((_,i)=>i!==idx),
+          figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null };
+      }
+    }
+
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -302,7 +350,12 @@ function generateItem(template, seed='demo'){
         if(!used.has(String(v))){ opts.push(v); used.add(String(v)); }
       }
     }
-    return { stem:renderStem(stem,{...P,...D}), answer:ans, distractors:opts.slice(0,3), figure: template.figure||template.image||template.img||template.diagram||null };
+    return {
+      stem: stemText,
+      answer: ans,
+      distractors: opts.slice(0,3),
+      figure: template.figure||template.image||template.img||template.diagram||template.figureUrl||template.imageUrl||null
+    };
   }
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
@@ -333,8 +386,8 @@ async function loadAll(){
 /* ------------------------------------------------------------------ */
 /* Test engine                                                         */
 /* ------------------------------------------------------------------ */
-const MODULE_TIME = 35*60;           // 35 minutes
-const BRANCH_THRESHOLD = 14;         // >=14 correct -> Hard
+const MODULE_TIME = 35*60;
+const BRANCH_THRESHOLD = 14;
 const BLUEPRINT = { M1:{E:7,M:10,H:5}, M2easy:{E:9,M:11,H:2}, M2hard:{E:3,M:12,H:7} };
 
 let pool={E:[],M:[],H:[]};
@@ -406,7 +459,7 @@ function show(idx){
   document.getElementById('qStem').textContent = g.stem;
 
   // Figure/diagram support
-  const figUrl = firstNonNull(g.figure, t.figure, t.image, t.img, t.diagram);
+  const figUrl = firstNonNull(g.figure, t.figure, t.image, t.img, t.diagram, t.figureUrl, t.imageUrl);
   const figWrap = document.getElementById('qFigure');
   figWrap.innerHTML = '';
   if(figUrl){
