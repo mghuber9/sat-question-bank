@@ -232,14 +232,17 @@ function generateItem(template, seed='demo'){
 /* ------------------------------------------------------------------ */
 /* Data loading + session seed                                         */
 /* ------------------------------------------------------------------ */
-const FILES={
-  HOA:'data/CLEAN_HOA_SAT.json',
-  PAM:'data/CLEAN_PAM_SAT.json',
-  PSDA:'data/CLEAN_PSDA_SAT.json',
-  GEOT:'data/CLEAN_GEOT_SAT.json'
+const FILES = {
+  HOA: '/data/CLEAN_HOA_SAT.json',
+  PAM: '/data/CLEAN_PAM_SAT.json',
+  PSDA: '/data/CLEAN_PSDA_SAT.json',
+  GEOT:'/data/CLEAN_GEOT_SAT.json'
 };
 
-const REFERENCE_IMG = 'data/sat-reference.jpg';
+// reference image (root-absolute so it works from /docs/)
+const REFERENCE_IMG = '/data/sat-reference.jpg';
+
+  
 
 const qs=new URLSearchParams(location.search);
 const sessionSeed = qs.get('seed') || (()=>{ try{const a=new Uint32Array(2); crypto.getRandomValues(a); return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);} catch{return Date.now().toString(36)+Math.random().toString(36).slice(2);} })();
