@@ -7,14 +7,26 @@
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --cb-blue:#1f4db5; --cb-blue-600:#113a92; --cb-blue-100:#eaf0ff;
-    --ink:#0b1020; --bg:#f7f9ff; --card:#ffffff; --muted:#66759a;
-    --ok:#0a7c3b; --bad:#c4322b;
+    --cb-blue:#1f4db5;
+    --cb-blue-600:#113a92;
+    --cb-blue-100:#eaf0ff;
+    --ink:#0b1020;
+    --bg:#f7f9ff;
+    --card:#ffffff;
+    --muted:#66759a;
+    --ok:#0a7c3b;
+    --bad:#c4322b;
   }
   html,body{margin:0;height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
   header.topbar{
-    background:var(--cb-blue); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px;
-    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08); position:sticky; top:0; z-index:20;
+    background:var(--cb-blue);
+    color:#fff;
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08);
+    position:sticky; top:0; z-index:20;
   }
   .brand{font-weight:700}
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
@@ -33,13 +45,21 @@
   .nav{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
   .tiny{font-size:13px; color:var(--muted)}
   .status{margin:10px 0; color:var(--muted)}
-  .green{color:var(--ok)} .red{color:var(--bad)}
-  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff; border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
-  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0; display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
+  .green{color:var(--ok)}
+  .red{color:var(--bad)}
+  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
+
+  /* Pop-outs */
+  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
+       border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
+  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
+             display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
   .pop .body{height:calc(100% - 42px); background:#fff; border-radius:0 0 14px 14px; overflow:hidden}
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
   .calc-iframe{width:100%; height:100%; border:0}
+
+  /* Always-visible ID bubble */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
 </style>
 </head>
@@ -105,35 +125,14 @@
 </div>
 
 <script>
-/* ---------- Guard any cross-origin history.replaceState attempts (no-op) -------- */
-(function(){
-  try{
-    const orig = history.replaceState.bind(history);
-    history.replaceState = function(state, title, url){
-      try{
-        if (typeof url === 'string') {
-          const dest = new URL(url, location.href);
-          if (dest.origin !== location.origin) return; // ignore cross-origin
-        }
-      }catch{ return; }
-      return orig(state, title, url);
-    };
-  }catch{}
-})();
-
-/* ---------------- URL normalize: fix accidental double slashes ---------------- */
-if (location.pathname.includes('//')) {
-  const normalized = location.origin + location.pathname.replace(/\/{2,}/g,'/') + location.search + location.hash;
-  location.replace(normalized);
-}
-
-/* ----------------------------- Error surface --------------------------------- */
+/* ------------------------------------------------------------------ */
+/* Small helpers                                                       */
+/* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
-/* -------------------------- RNG / helpers / eval ----------------------------- */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
@@ -151,6 +150,7 @@ function pick(spec,rnd){
   throw new Error('Could not sample param (too restrictive).');
 }
 function renderStem(stem,vars){return String(stem||'').replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+
 function evalExpr(expr,scope){
   const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
   if(typeof expr!=='string') return expr;
@@ -168,9 +168,12 @@ function safeEvalOrLiteral(expr,scope){
 }
 function tidy(s){
   return String(s||'')
-    .replace(/\+\s*-/g,' - ').replace(/-\s*-/g,' + ')
-    .replace(/\b1x\b/g,'x').replace(/\b-1x\b/g,'-x')
-    .replace(/\s{2,}/g,' ').replace(/\s([,.;!?])/g,'$1');
+    .replace(/\+\s*-/g,' - ')
+    .replace(/-\s*-/g,' + ')
+    .replace(/\b1x\b/g,'x')
+    .replace(/\b-1x\b/g,'-x')
+    .replace(/\s{2,}/g,' ')
+    .replace(/\s([,.;!?])/g,'$1');
 }
 function formatNumber(x,fmt){
   if(typeof x!=='number' || !isFinite(x)) return x;
@@ -179,7 +182,6 @@ function formatNumber(x,fmt){
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
 
-/* ------------------------------ Generator ------------------------------------ */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
@@ -220,7 +222,9 @@ function generateItem(template, seed='demo'){
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
 
-/* ------------------------------ Data & seed ---------------------------------- */
+/* ------------------------------------------------------------------ */
+/* Data loading + session seed (Codespaces-safe)                       */
+/* ------------------------------------------------------------------ */
 const REFERENCE_IMG = 'data/sat-reference.jpg';
 
 /* Try CLEAN_* first, then fall back to MASTER_* so this works in both setups */
@@ -235,10 +239,15 @@ const qs = new URLSearchParams(window.location.search);
 const sessionSeed =
   qs.get('seed') ||
   (() => {
-    try { const a = new Uint32Array(2); crypto.getRandomValues(a);
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
       return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);
-    } catch { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+    } catch {
+      return Date.now().toString(36)+Math.random().toString(36).slice(2);
+    }
   })();
+// No history.replaceState here (Codespaces warning)
 document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
 
 async function loadAll(){
@@ -254,28 +263,25 @@ async function loadAll(){
           loaded=true;
           break;
         }
-      }catch{}
+      }catch{/* try next alt */}
     }
     if(!loaded){ console.warn('Could not load any file from', alts); }
   }
   return all;
 }
 
-/* ------------------------------ Engine config -------------------------------- */
+/* ------------------------------------------------------------------ */
+/* Test engine + review for both modules                               */
+/* ------------------------------------------------------------------ */
 const MODULE_TIME = 35*60; // 35 minutes
 const BRANCH_THRESHOLD = 14;
-
-const DIFF_BLUEPRINT = {
-  M1:     {E:7, M:10, H:5},
+const BLUEPRINT = {
+  M1: {E:7, M:10, H:5},
   M2easy: {E:9, M:11, H:2},
   M2hard: {E:3, M:12, H:7}
 };
 
-/* Domain quotas per 22-question module (≈ SAT mix) */
-const DOMAIN_QUOTAS = {
-  default: { HOA:8, PAM:8, PSDA:3, GEOT:3 }
-};
-
+let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
 
 /* live state for the module currently on screen */
@@ -291,195 +297,69 @@ let state={
 };
 
 /* persistent snapshots for review later */
-const reviewStore = { 1:null, 2:null };
+const reviewStore = {
+  1:null, // {items, gens, answers}
+  2:null
+};
 
-/* ------------------------------ Pool helpers --------------------------------- */
-function inferDomain(it){
-  if(it.domain) return it.domain;
-  const id = String(it.id||'');
-  if(/(^|-)HOA(-|$)/i.test(id))  return 'HOA';
-  if(/(^|-)PAM(-|$)/i.test(id))  return 'PAM';
-  if(/(^|-)PSDA(-|$)/i.test(id)) return 'PSDA';
-  if(/(^|-)GEOT(-|$)/i.test(id)) return 'GEOT';
-  return 'HOA'; // default to algebra if missing
+function splitByDifficulty(all){
+  return {
+    E: all.filter(x=>(x.difficulty||'M')==='E'),
+    M: all.filter(x=>(x.difficulty||'M')==='M'),
+    H: all.filter(x=>(x.difficulty||'M')==='H'),
+  };
 }
-
-function splitPool(all){
-  const pool = { HOA:{E:[],M:[],H:[]}, PAM:{E:[],M:[],H:[]}, PSDA:{E:[],M:[],H:[]}, GEOT:{E:[],M:[],H:[]} };
-  all.forEach(x=>{
-    const d = (x.difficulty||'M').toUpperCase();
-    const dom = inferDomain(x);
-    if(pool[dom] && pool[dom][d]) pool[dom][d].push(x);
-  });
-  return pool;
+function takeUnique(arr, seedTag){
+  const rnd=makeRng(seedTag);
+  const a = arr.filter(x=>!usedIds.has(x.id));
+  const sh = a.slice();
+  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
+  return sh;
 }
-
-function familyKey(it){
-  if(it.family) return String(it.family);
-  const t = it.template || {};
-  const norm = s => String(s||'').toLowerCase()
-      .replace(/\{\{[^}]+\}\}/g,'{}')   // params -> {}
-      .replace(/-?\d+(\.\d+)?/g,'#')    // numbers -> #
-      .replace(/\s+/g,' ')
-      .trim();
-  const stem = norm(t.stem);
-  const ans  = norm(t.answer);
-  return [inferDomain(it), (it.subtopic||''), stem, ans].join('|');
-}
-
 function isPlayableGen(g){
   const okAns = g && String(g.answer).trim()!=='';
   const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
   const okStem = g && String(g.stem||'').trim().length>3;
   return okAns && okChoices && okStem;
 }
-
-/* Allocate counts for each domain across difficulties based on diff shares */
-function allocateDiffCounts(totalByDiff, domainQuota){
-  const totalQ = totalByDiff.E + totalByDiff.M + totalByDiff.H; // should be 22
-  const shareE = totalByDiff.E/totalQ, shareM = totalByDiff.M/totalQ, shareH = totalByDiff.H/totalQ;
-  let e = Math.round(domainQuota*shareE);
-  let m = Math.round(domainQuota*shareM);
-  let h = Math.round(domainQuota*shareH);
-  // fix rounding drift
-  let drift = domainQuota - (e+m+h);
-  while(drift!==0){
-    if(drift>0){ // add to the largest deficit share
-      const picks=[['E',shareE],['M',shareM],['H',shareH]].sort((a,b)=>b[1]-a[1]);
-      ({0:({0:inc}={0:'E'} )});// no-op to satisfy linter
-      if(e<=m && e<=h) { e++; }
-      else if(m<=h)    { m++; }
-      else             { h++; }
-      drift--;
-    }else{
-      // remove from the largest bucket first
-      if(e>=m && e>=h && e>0){ e--; }
-      else if(m>=h && m>0){ m--; }
-      else if(h>0){ h--; }
-      drift++;
-    }
-  }
-  return {E:e,M:m,H:h};
-}
-
-/* Pick items to satisfy domain quotas + difficulty blueprint (with backfill) */
-function buildModuleWithQuotas(which, route, fullPool){
-  const diffBP = (which===1)? DIFF_BLUEPRINT.M1 : (route==='hard'? DIFF_BLUEPRINT.M2hard : DIFF_BLUEPRINT.M2easy);
-  const domQ   = DOMAIN_QUOTAS.default;
-  const TOTAL  = diffBP.E + diffBP.M + diffBP.H; // should be 22
-
-  const seedBase = `module${which}:${route}:${sessionSeed}`;
-  const tagBase  = `m${which}:${route}:${sessionSeed}`;
-
-  // Clone & shuffle buckets per domain/diff, removing used IDs
-  const buckets = {};
-  for(const dom of Object.keys(domQ)){
-    buckets[dom]={E:[],M:[],H:[]};
-    for(const d of ['E','M','H']){
-      const arr = (fullPool[dom]?.[d]||[]).filter(x=>!usedIds.has(x.id));
-      const rnd = makeRng(`${tagBase}:${dom}:${d}`);
-      const sh = arr.slice();
-      for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
-      buckets[dom][d]=sh;
-    }
-  }
-
-  // Allocate counts per domain across E/M/H
-  const needByDomDiff = {};
-  for(const dom of Object.keys(domQ)){
-    needByDomDiff[dom] = allocateDiffCounts(diffBP, domQ[dom]);
-  }
-
-  const usedFamilies = new Set();
+function buildPlayableModule(which, branchTag){
+  const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
+  const need = [{d:'H',n:bp.H},{d:'M',n:bp.M},{d:'E',n:bp.E}];
+  const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
+  const tagBase  = `m${which}:${branchTag}:${sessionSeed}`;
   const outItems=[], outGens=[];
-  function tryPull(dom, d){
-    const arr = buckets[dom][d];
-    while(arr.length){
-      const it = arr.shift();
-      const fam= familyKey(it);
-      if(usedFamilies.has(fam)) continue;
+  const buckets={H:takeUnique(pool.H, tagBase+':H'), M:takeUnique(pool.M, tagBase+':M'), E:takeUnique(pool.E, tagBase+':E')};
+
+  function tryPull(d){
+    while(buckets[d].length){
+      const it=buckets[d].shift();
       try{
         const g=generateItem(it.template, `${seedBase}:${it.id}`);
         if(isPlayableGen(g)){
-          usedFamilies.add(fam);
           outItems.push(it); outGens.push(g); usedIds.add(it.id);
           return true;
         }
-      }catch{}
+      }catch{/* skip */}
     }
     return false;
   }
 
-  // Pass A: honor domain+difficulty quotas as allocated
-  for(const dom of Object.keys(domQ)){
-    for(const d of ['H','M','E']){ // fill hard first for reliability
-      for(let k=0;k<needByDomDiff[dom][d];k++){
-        if(!tryPull(dom, d)){
-          needByDomDiff[dom][d]--; // will backfill later
-        }
-      }
+  for(const req of need){
+    for(let k=0;k<req.n;k++){
+      if(tryPull(req.d)) continue;
+      if(req.d==='H' && tryPull('M')) continue;
+      if((req.d==='H'||req.d==='M') && tryPull('E')) continue;
+      if(tryPull('H') || tryPull('M') || tryPull('E')) continue;
+      break;
     }
   }
 
-  // Backfill 1: within same domain, other difficulties (M->E/H etc.)
-  function backfillDomain(dom){
-    // compute how many this domain still needs overall
-    const target = domQ[dom];
-    const have   = outItems.filter(it=>inferDomain(it)===dom).length;
-    let deficit  = target - have;
-    const order = ['H','M','E']; // preference
-    while(deficit>0){
-      let filled=false;
-      for(const d of order){
-        if(tryPull(dom,d)){ deficit--; filled=true; if(deficit<=0) break; }
-      }
-      if(!filled) break;
-    }
-  }
-  for(const dom of Object.keys(domQ)) backfillDomain(dom);
-
-  // Backfill 2: if total < 22, allow cross-domain picking honoring diff where possible
-  function countTotal(){ return outItems.length; }
-  const wantTotal = TOTAL;
-  const diffCount = {E: outItems.filter((_,i)=>true).reduce((a,_,i)=>a,0)}; // placeholder (not used directly)
-
-  // fill remaining slots with any playable items preferring missing difficulties globally
-  function tryAny(){
-    // rank (diff, dom) by how many we still want from diff blueprint
-    // compute current diff counts
-    const cur={E:0,M:0,H:0};
-    outItems.forEach((it,idx)=>{
-      const d = (it.difficulty||'M').toUpperCase();
-      if(cur[d]!=null) cur[d]++;
-    });
-    const needE = Math.max(0, diffBP.E - cur.E);
-    const needM = Math.max(0, diffBP.M - cur.M);
-    const needH = Math.max(0, diffBP.H - cur.H);
-    const diffOrder = [['H',needH],['M',needM],['E',needE]].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-    for(const d of diffOrder){
-      for(const dom of Object.keys(domQ)){
-        if(tryPull(dom,d)) return true;
-      }
-    }
-    // if nothing by diff, take anything
-    for(const dom of Object.keys(domQ)){
-      for(const d of ['H','M','E']){
-        if(tryPull(dom,d)) return true;
-      }
-    }
-    return false;
-  }
-  let guard=200;
-  while(countTotal()<wantTotal && guard-->0){
-    if(!tryAny()) break;
-  }
-
-  // Final shuffle order so Q1 isn't predictable
-  const order = seededShuffle([...outItems.keys()], `${tagBase}:order`);
-  return { items: order.map(i=>outItems[i]), gens: order.map(i=>outGens[i]) };
+  const order = seededShuffle([...outItems.keys()], tagBase+':order');
+  const itemsSh = order.map(i=>outItems[i]);
+  const gensSh  = order.map(i=>outGens[i]);
+  return {items:itemsSh, gens:gensSh};
 }
 
-/* ------------------------------ UI flow -------------------------------------- */
 function startTimer(){
   clearInterval(state.timer);
   const el = document.getElementById('hdrTimer');
@@ -555,6 +435,7 @@ function submitModule(){
 
   const correct = scoreModule(state.items, state.gens, state.answers);
   const total = state.gens.length;
+
   const branch = (state.module===1)
     ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
     : state.route;
@@ -635,14 +516,14 @@ async function beginModule1(){
   document.getElementById('status').textContent='Loading question bank…';
 
   const all = await loadAll();
-  const fullPool = splitPool(all);
+  pool = splitByDifficulty(all);
 
   usedIds.clear();
   state.module=1;
   state.answers = new Map();
   state.remaining = MODULE_TIME;
 
-  const built = buildModuleWithQuotas(1,'base', fullPool);
+  const built = buildPlayableModule(1,'base');
   state.items = built.items;
   state.gens  = built.gens;
 
@@ -655,31 +536,28 @@ function beginModule2(){
   document.getElementById('hdrModule').textContent='Module 2';
   document.getElementById('status').textContent='Building Module 2…';
 
-  // Rebuild the pool from same data (items are excluded by usedIds)
-  loadAll().then(all=>{
-    const fullPool = splitPool(all);
+  state.module=2;
+  state.answers = new Map();
+  state.remaining = MODULE_TIME;
 
-    state.module=2;
-    state.answers = new Map();
-    state.remaining = MODULE_TIME;
+  const built = buildPlayableModule(2, state.route);
+  state.items = built.items;
+  state.gens  = built.gens;
 
-    const built = buildModuleWithQuotas(2, state.route, fullPool);
-    state.items = built.items;
-    state.gens  = built.gens;
-
-    document.getElementById('status').textContent='Module 2 ready.';
-    show(0);
-    startTimer();
-  });
+  document.getElementById('status').textContent='Module 2 ready.';
+  show(0);
+  startTimer();
 }
 
-/* ------------------------------- Wiring -------------------------------------- */
+/* ------------------------------------------------------------------ */
+/* UI wiring                                                           */
+/* ------------------------------------------------------------------ */
 document.getElementById('btnStart').addEventListener('click', beginModule1);
 document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
 document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
 document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
 
-/* Pop-outs drag */
+/* Pop-outs */
 function enableDrag(popId){
   const pop=document.getElementById(popId);
   const head = pop.querySelector('.head');
