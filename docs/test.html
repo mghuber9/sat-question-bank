@@ -141,7 +141,7 @@ const FILES = {
   PAM: `${PREFIX}/data/CLEAN_PAM_SAT.json`,
   GEOT: `${PREFIX}/data/CLEAN_GEOT_SAT.json`,
   PSDA: `${PREFIX}/data/CLEAN_PSDA_SAT.json`,
-  // Optional fallback masters (uncomment if you add them)
+  // Optional fallbacks if you host MASTER_* files too:
   // HOA_FALLBACK: `${PREFIX}/data/MASTER_HOA_SAT.json`,
   // PAM_FALLBACK: `${PREFIX}/data/MASTER_PAM_SAT.json`,
   // GEOT_FALLBACK: `${PREFIX}/data/MASTER_GEOT_SAT.json`,
@@ -218,423 +218,91 @@ function formatNumber(x,fmt){
 }
 
 /* ------------------------------------------------------------------ */
-/* Generation + playability                                            */
+/* Fallback bank generator (used when JSON fetch fails)                */
 /* ------------------------------------------------------------------ */
-function generateItem(template, seed='demo'){
-  const rnd=makeRng(seed);
-  const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
-  const fmt = template.format || template.display || null;
-  const MAX=250;
+function makeFallbackBank(count = 140, seed='fallback'){
+  const rnd = makeRng(seed);
+  const bank = [];
+  let id = 100000;
 
-  for(let attempt=0;attempt<MAX;attempt++){
-    const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
-    const D={}; let okDer=true;
-    for(const[k,e] of Object.entries(derived)){ try{ D[k]=evalExpr(e,{...P,...D}); } catch{ okDer=false; break; } }
-    if(!okDer) continue;
-    let ok=true;
-    for(const c of constraints){ try{ if(!evalExpr(c,{...P,...D})) { ok=false; break; } } catch{ ok=false; break; } }
-    if(!ok) continue;
+  const push = (obj)=>bank.push(obj);
 
-    const scope={...P,...D};
-    let ans = formatNumber(safeEvalOrLiteral(answer,scope), fmt);
-    const opts=[];
-    for(const d of distractors){
-      let v = formatNumber(safeEvalOrLiteral(d,{...scope,ans}), fmt);
-      if(String(v)!==String(ans)) opts.push(v);
-    }
-    if(typeof ans==='number' && opts.length<3){
-      const used=new Set([String(ans), ...opts.map(String)]);
-      const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
-      const candidates=[ ans+mag, ans-mag, Math.floor(ans), Math.ceil(ans), ans*1.1, ans*0.9 ];
-      for(const c of candidates){
-        const v=formatNumber(c,fmt);
-        if(!Number.isNaN(v) && !used.has(String(v))){ opts.push(v); used.add(String(v)); if(opts.length>=3) break; }
+  const topicsE = ['PAM:ARITHMETIC','HOA:LINEAR','GEOT:AREA'];
+  const topicsM = ['PAM:PERCENTS','HOA:SYSTEMS','GEOT:RIGHT-TRI'];
+  const topicsH = ['PSDA:FUNCTIONS','HOA:QUADRATIC','GEOT:CIRCLES'];
+
+  // Easy: sums, unit price, rectangle area, simple linear plug-in
+  for(let i=0;i<count*0.4;i++){
+    const t = topicsE[i%topicsE.length];
+    const a = 3+Math.floor(rnd()*47), b = 2+Math.floor(rnd()*38);
+    push({
+      id: 'E'+(id++), topic: t, difficulty: 'E',
+      template:{
+        stem: t==='GEOT:AREA'
+          ? 'A rectangle has length {{L}} and width {{W}}. What is its area?'
+          : t==='HOA:LINEAR'
+            ? 'Given y = 2x + {{b}}, what is y when x = {{x}}?'
+            : 'What is {{A}} + {{B}}?',
+        params: t==='GEOT:AREA'
+          ? {L:{min:3,max:20}, W:{min:2,max:15}}
+          : t==='HOA:LINEAR'
+            ? {b:{min:-9,max:9}, x:{min:-6,max:6}}
+            : {A:{min:10,max:60}, B:{min:10,max:60}},
+        answer: t==='GEOT:AREA'
+          ? 'L*W'
+          : t==='HOA:LINEAR'
+            ? '2*x + b'
+            : 'A + B',
+        distractors: ['ans+1','ans-1','ans*1.1'],
+        format:{fixed:0}
       }
-      while(opts.length<3){
-        const delta=(0.5+rnd())*mag*(rnd()<0.5?-1:1);
-        const v=formatNumber(ans+delta,fmt);
-        if(!used.has(String(v))){ opts.push(v); used.add(String(v)); }
+    });
+  }
+
+  // Medium: percent change, systems (elimination numeric), right triangle Pythag
+  for(let i=0;i<count*0.4;i++){
+    const t = topicsM[i%topicsM.length];
+    push({
+      id: 'M'+(id++), topic: t, difficulty: 'M',
+      template: (t==='PAM:PERCENTS') ? {
+        stem: 'A value is {{P}}% of {{B}}. What is the value?',
+        params:{P:{min:10,max:90}, B:{min:50,max:400}},
+        answer: '(P/100)*B',
+        distractors: ['B-P','B+P','(B/P)'],
+        format:{round:2}
+      } : (t==='HOA:SYSTEMS') ? {
+        stem: 'Solve for x: 2x + {{c}} = {{rhs}}.',
+        params:{c:{min:-10,max:10}, rhs:{min:-20,max:30}},
+        answer: '(rhs - c)/2',
+        distractors: ['(rhs+c)/2','rhs-2*c','rhs/2'],
+        format:{round:3}
+      } : {
+        stem: 'A right triangle has legs {{a}} and {{b}}. What is the hypotenuse?',
+        params:{a:{min:3,max:20}, b:{min:4,max:20}},
+        answer: 'Math.sqrt(a*a+b*b)',
+        distractors: ['a+b','a*b','Math.abs(a-b)'],
+        format:{round:3}
       }
-    }
-    return { stem: tidy(renderStem(stem,scope)), answer:ans, distractors:opts.slice(0,3) };
-  }
-  throw new Error('Constraint not satisfiable after multiple attempts');
-}
-function isPlayableGen(g){
-  const okAns = g && String(g.answer).trim()!=='';
-  const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
-  const okStem = g && String(g.stem||'').trim().length>10;
-  return okAns && okChoices && okStem;
-}
-
-/* ------------------------------------------------------------------ */
-/* Data loading                                                        */
-/* ------------------------------------------------------------------ */
-async function safeFetchJson(url){
-  try{
-    const r = await fetch(url, {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return await r.json();
-  }catch(e){
-    console.warn('Skip load', url, String(e));
-    return null;
-  }
-}
-async function loadAll(){
-  const urls = Object.values(FILES);
-  const all=[];
-  for(const u of urls){
-    if(!u) continue;
-    const arr = await safeFetchJson(u);
-    if(Array.isArray(arr)) all.push(...arr);
-  }
-  return all;
-}
-
-/* ------------------------------------------------------------------ */
-/* Session seed (no replaceState—Codespaces-safe)                      */
-/* ------------------------------------------------------------------ */
-const qs = new URLSearchParams(window.location.search);
-const sessionSeed =
-  qs.get('seed') ||
-  (() => {
-    try {
-      const a = new Uint32Array(2);
-      crypto.getRandomValues(a);
-      return Date.now().toString(36) + a[0].toString(36) + a[1].toString(36);
-    } catch {
-      return Date.now().toString(36) + Math.random().toString(36).slice(2);
-    }
-  })();
-document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
-
-/* ------------------------------------------------------------------ */
-/* Builder (with fallback and topic diversity guard)                   */
-/* ------------------------------------------------------------------ */
-let pool={E:[],M:[],H:[]};
-let usedIds=new Set();
-
-function splitByDifficulty(all){
-  return {
-    E: all.filter(x=>(x.difficulty||'M')==='E'),
-    M: all.filter(x=>(x.difficulty||'M')==='M'),
-    H: all.filter(x=>(x.difficulty||'M')==='H'),
-  };
-}
-function normTopic(t){ return (t||'').toString().trim().toUpperCase(); }
-function takeUnique(arr, seedTag){
-  const rnd=makeRng(seedTag);
-  const a = arr.filter(x=>!usedIds.has(x.id));
-  const sh = a.slice();
-  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
-  return sh;
-}
-
-function buildModule(which, routeTag){
-  const bp = (which===1) ? BLUEPRINT.M1 : (routeTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
-  const target = bp.E + bp.M + bp.H;
-  const seedBase = `module${which}:${routeTag}:${sessionSeed}`;
-
-  function tryFill(byDifficultyOnly=false){
-    const items=[], gens=[];
-    const topicCount=new Map();
-    function withinCap(topic){
-      if(byDifficultyOnly) return true;
-      const k=normTopic(topic);
-      const c=topicCount.get(k)||0;
-      return c<MAX_PER_TOPIC;
-    }
-    function bump(topic){
-      const k=normTopic(topic); topicCount.set(k,(topicCount.get(k)||0)+1);
-    }
-    const buckets={H:takeUnique(pool.H, seedBase+':H'), M:takeUnique(pool.M, seedBase+':M'), E:takeUnique(pool.E, seedBase+':E')};
-
-    async function pullOne(bucketKey){
-      while(buckets[bucketKey].length){
-        const it=buckets[bucketKey].shift();
-        try{
-          if(!withinCap(it.topic)) continue;
-          const g=generateItem(it.template, `${seedBase}:${it.id}`);
-          if(isPlayableGen(g)){
-            items.push(it); gens.push(g); usedIds.add(it.id); bump(it.topic);
-            return true;
-          }
-        }catch{/* skip bad render */}
-      }
-      return false;
-    }
-
-    const order = ['H','M','E'];
-    const need = {H:bp.H, M:bp.M, E:bp.E};
-
-    for(const k of order){
-      for(let i=0;i<need[k];i++){
-        if(!(await pullOne(k))){
-          if(k==='H' && (await pullOne('M'))) continue;
-          if((k==='H' || k==='M') && (await pullOne('E'))) continue;
-          break;
-        }
-      }
-    }
-
-    let attempts=0;
-    const allRest=[...buckets.H, ...buckets.M, ...buckets.E];
-    while(items.length<target && attempts<allRest.length){
-      const it=allRest[attempts++];
-      try{
-        if(!withinCap(it.topic)) continue;
-        const g=generateItem(it.template, `${seedBase}:pad:${it.id}`);
-        if(isPlayableGen(g)){
-          items.push(it); gens.push(g); usedIds.add(it.id); bump(it.topic);
-        }
-      }catch{}
-    }
-    return {items, gens};
+    });
   }
 
-  let built = tryFill(false);
-  if(built.items.length>= target) return built;
-
-  built = tryFill(true);
-  if(built.items.length>= target) return built;
-
-  const all = takeUnique([...pool.H, ...pool.M, ...pool.E], seedBase+':any');
-  const items=[], gens=[];
-  for(const it of all){
-    if(items.length >= target) break;
-    try{
-      const g=generateItem(it.template, `${seedBase}:any:${it.id}`);
-      if(isPlayableGen(g)){ items.push(it); gens.push(g); usedIds.add(it.id); }
-    }catch{}
-  }
-  return {items, gens};
-}
-
-/* ------------------------------------------------------------------ */
-/* App state + flow                                                    */
-/* ------------------------------------------------------------------ */
-let state={
-  module:1,
-  items:[],
-  gens:[],
-  answers:new Map(),
-  idx:0,
-  timer:null,
-  remaining:MODULE_TIME,
-  route:'easy',
-  reviews:{1:null, 2:null},
-};
-
-function startTimer(){
-  clearInterval(state.timer);
-  const el = document.getElementById('hdrTimer');
-  function render(){
-    const m=Math.floor(state.remaining/60), s=state.remaining%60;
-    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  }
-  render();
-  state.timer=setInterval(()=>{
-    state.remaining--;
-    if(state.remaining<=0){ clearInterval(state.timer); submitModule(); }
-    else render();
-  }, 1000);
-}
-
-function show(idx){
-  const total = state.gens.length;
-  if(total===0){
-    document.getElementById('intro').style.display='none';
-    document.getElementById('qCard').style.display='none';
-    const s = document.getElementById('summary');
-    s.style.display='';
-    s.innerHTML = `
-      <h2 style="margin:0 0 6px;">Couldn’t build this module</h2>
-      <p class="tiny">We tried topic-aware, difficulty-only, and “any playable” fallbacks but still ran short. This usually means the bank is extremely constrained by tags or many items failed playability checks.</p>
-      <div style="margin-top:10px">
-        <button class="btn" onclick="location.reload()">Try again</button>
-      </div>`;
-    return;
-  }
-
-  state.idx = Math.max(0, Math.min(idx, total-1));
-  const g = state.gens[state.idx];
-  const t = state.items[state.idx];
-
-  document.getElementById('intro').style.display='none';
-  document.getElementById('qCard').style.display='';
-  document.getElementById('summary').style.display='none';
-
-  document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
-  document.getElementById('qDbg').textContent = `ID ${t.id||'—'}`;
-
-  document.getElementById('qStem').textContent = g.stem;
-
-  const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
-  const chosen = state.answers.get(state.idx) ?? null;
-  const wrap = document.getElementById('qChoices');
-  wrap.innerHTML='';
-  opts.forEach((o,i)=>{
-    const id=`opt${state.idx}_${i}`;
-    const div=document.createElement('label');
-    div.className='choice';
-    div.innerHTML = `<input type="radio" name="q${state.idx}" id="${id}" value="${String(o)}"> <span>${String(o)}</span>`;
-    const input = div.querySelector('input');
-    if(chosen!==null && String(chosen)===String(o)) input.checked=true;
-    input.addEventListener('change',()=> state.answers.set(state.idx, String(o)) );
-    wrap.appendChild(div);
-  });
-
-  document.getElementById('btnPrev').disabled = state.idx===0;
-  const last = state.idx===total-1;
-  document.getElementById('btnNext').style.display = last? 'none': '';
-  document.getElementById('btnSubmitModule').style.display = last? '': 'none';
-}
-
-function scoreModule(){
-  let correct=0;
-  state.gens.forEach((g,i)=>{
-    const a = state.answers.get(i);
-    if(String(a)===String(g.answer)) correct++;
-  });
-  return correct;
-}
-
-function moduleReviewHTML(modNum){
-  let html = `<h2 style="margin:0 0 8px;">Module ${modNum} — Review</h2>`;
-  state.gens.forEach((g,i)=>{
-    const your = state.answers.get(i);
-    const ok = String(your)===String(g.answer);
-    const item = state.items[i];
-    const tpc = item.topic ? `<span class="chip" style="margin-left:6px">${item.topic}</span>` : '';
-    html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
-      <div class="tiny">Q ${i+1} • ID ${item.id||'—'} ${tpc}</div>
-      <div>${g.stem}</div>
-      <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${your??'—'} • Correct: ${g.answer}</div>
-    </div>`;
-  });
-  return html;
-}
-
-function submitModule(){
-  clearInterval(state.timer);
-  const correct = scoreModule();
-  const total = state.gens.length;
-  const sum = document.getElementById('summary');
-  sum.style.display='';
-  document.getElementById('qCard').style.display='none';
-
-  const branch = (state.module===1)
-    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
-    : state.route;
-
-  if(state.module===1){
-    state.reviews[1] = moduleReviewHTML(1);
-    let html = `<h2 style="margin:0 0 6px;">Module 1 complete</h2>`;
-    html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
-    html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
-    html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
-    html += `<div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`;
-    sum.innerHTML = html;
-
-    state.route = branch;
-    document.getElementById('btnBeginM2').onclick = () => beginModule2();
-  }else{
-    state.reviews[2] = moduleReviewHTML(2);
-    let html = `<h2 style="margin:0 0 6px;">Practice Complete</h2>`;
-    html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
-    html += `<div style="margin:10px 0;">
-                <button class="btn" onclick="toggleSection('rev1')">Toggle Module 1 Review</button>
-                <button class="btn" style="margin-left:8px" onclick="toggleSection('rev2')">Toggle Module 2 Review</button>
-              </div>`;
-    html += `<div id="rev1" style="display:block">${state.reviews[1]||'<div class="tiny">No data for Module 1.</div>'}</div>`;
-    html += `<div id="rev2" style="display:block; margin-top:16px">${state.reviews[2]||'<div class="tiny">No data for Module 2.</div>'}</div>`;
-    html += `<div style="margin-top:12px">
-               <button class="btn" onclick="location.reload()">New Test (new seed)</button>
-             </div>`;
-    sum.innerHTML = html;
-  }
-}
-
-function toggleSection(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.style.display = (el.style.display==='none') ? 'block' : 'none';
-}
-
-async function beginModule1(){
-  document.getElementById('hdrModule').textContent='Module 1';
-  document.getElementById('status').textContent='Loading question bank…';
-
-  const all = await loadAll();
-  pool = splitByDifficulty(all);
-
-  usedIds.clear();
-  state.module=1;
-  state.answers = new Map();
-  state.remaining = MODULE_TIME;
-
-  const built = buildModule(1,'base');
-  state.items = built.items;
-  state.gens  = built.gens;
-
-  if(state.gens.length===0){
-    show(0); // will present an error card
-    return;
-  }
-
-  document.getElementById('status').textContent='Module 1 ready.';
-  show(0);
-  startTimer();
-}
-
-function beginModule2(){
-  document.getElementById('hdrModule').textContent='Module 2';
-  document.getElementById('status').textContent='Building Module 2…';
-
-  state.module=2;
-  state.answers = new Map();
-  state.remaining = MODULE_TIME;
-
-  const built = buildModule(2, state.route);
-  state.items = built.items;
-  state.gens  = built.gens;
-
-  if(state.gens.length===0){
-    show(0); // error card
-    return;
-  }
-
-  document.getElementById('status').textContent='Module 2 ready.';
-  show(0);
-  startTimer();
-}
-
-/* ------------------------------------------------------------------ */
-/* UI wiring                                                           */
-/* ------------------------------------------------------------------ */
-document.getElementById('btnStart').addEventListener('click', beginModule1);
-document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
-document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
-document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
-
-/* Pop-outs & drag */
-function enableDrag(popId){
-  const pop=document.getElementById(popId);
-  const head = pop.querySelector('.head');
-  let dragging=false, sx=0, sy=0, sl=0, st=0;
-  head.addEventListener('mousedown', (e)=>{ dragging=true; sx=e.clientX; sy=e.clientY; const r=pop.getBoundingClientRect(); sl=r.left; st=r.top; e.preventDefault(); });
-  window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; pop.style.left=(sl+dx)+'px'; pop.style.top=(st+dy)+'px'; pop.style.right='auto'; pop.style.bottom='auto'; });
-  window.addEventListener('mouseup', ()=> dragging=false);
-}
-enableDrag('popCalc'); enableDrag('popRef');
-
-document.getElementById('btnCalc').onclick=()=>{ const p=document.getElementById('popCalc'); p.style.display='block'; };
-document.getElementById('btnRef').onclick =()=>{ const p=document.getElementById('popRef');  p.style.display='block'; };
-document.querySelector('[data-close="calc"]').onclick=()=>document.getElementById('popCalc').style.display='none';
-document.querySelector('[data-close="ref"]').onclick =()=>document.getElementById('popRef').style.display='none';
-
-document.getElementById('refImg').src = REFERENCE_IMG;
-document.getElementById('refImg').onerror = function(){ this.alt='Reference sheet image not found at '+REFERENCE_IMG; };
-</script>
-</body>
-</html>
+  // Hard: vertex of quadratic, circle sector length, composite function
+  for(let i=0;i<count*0.2;i++){
+    const t = topicsH[i%topicsH.length];
+    push({
+      id:'H'+(id++), topic:t, difficulty:'H',
+      template: (t==='HOA:QUADRATIC') ? {
+        stem: 'For f(x) = ax^2 + bx + c with a={{a}}, b={{b}}, c={{c}}, what is the x-coordinate of the vertex?',
+        params:{a:{min:1,max:5}, b:{min:-12,max:12}, c:{min:-10,max:10}},
+        answer: '-b/(2*a)',
+        distractors: ['b/(2*a)','-2*a/b','c/(2*a)'],
+        format:{round:3}
+      } : (t==='GEOT:CIRCLES') ? {
+        stem: 'A circle has radius r={{r}}. What is the circumference of a {{deg}}° arc?',
+        params:{r:{min:3,max:15}, deg:{values:[30,45,60,90,120,150,180,210,240,270]}},
+        derived:{frac:'deg/360'},
+        answer: '2*Math.PI*r*frac',
+        distractors: ['Math.PI*r*frac','2*Math.PI*r/deg','2*Math.PI*deg'],
+        format:{round:3}
+      } : {
+        stem: 'Let f(x)= {{m}}x + {{b}} and g(x)= x^2. What is (f∘g)(2)?',
