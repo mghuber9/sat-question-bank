@@ -62,8 +62,6 @@
   .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
   .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
   .chip{padding:2px 8px;border-radius:999px;background:var(--cb-blue-100); border:1px solid #cfe0ff; color:#143b8d; font-weight:600}
-
-  /* always-visible debug badge (ID + module) */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
 </style>
 </head>
@@ -88,7 +86,7 @@
     <p class="tiny">Two adaptive modules • 22 questions each • 35 minutes per module. A new random session seed is created
       every time you open this page (unless you include <code>?seed=</code> in the URL).</p>
     <div style="margin-top:10px">
-      <button id="btnStart" class="btn" onclick="beginModule1()">Start Module 1</button>
+      <button id="btnStart" class="btn">Start Module 1</button>
       <span id="seedEcho" class="tiny" style="margin-left:8px;"></span>
     </div>
   </div>
@@ -96,7 +94,6 @@
   <div id="qCard" class="card" style="display:none">
     <div class="row">
       <div id="qNum" class="qnum">Q 1</div>
-      <!-- always-visible debug badge -->
       <div id="qDbg" class="dbg">ID —</div>
       <div class="spacer"></div>
     </div>
@@ -133,23 +130,25 @@
 
 <script>
 /* ------------------------------------------------------------------ */
-/* Configuration                                                       */
+/* Configuration (works in Codespaces and GitHub Pages)                */
 /* ------------------------------------------------------------------ */
 
-/* JSON files to load (missing files are skipped gracefully) */
+/* If test.html is served from /docs/, go up one level to reach /data; else use current dir */
+const PREFIX = location.pathname.includes('/docs/') ? '..' : '.';
+
 const FILES = {
-  HOA: "/data/CLEAN_HOA_SAT.json",
-  PAM: "/data/CLEAN_PAM_SAT.json",
-  GEOT: "/data/CLEAN_GEOT_SAT.json",
-  PSDA: "/data/CLEAN_PSDA_SAT.json",
-  // Optional fallback masters (commented; will only be used if you add them)
-  // HOA_FALLBACK: "/data/MASTER_HOA_SAT.json",
-  // PAM_FALLBACK: "/data/MASTER_PAM_SAT.json",
-  // GEOT_FALLBACK: "/data/MASTER_GEOT_SAT.json",
-  // PSDA_FALLBACK: "/data/MASTER_PSDA_SAT.json",
+  HOA: `${PREFIX}/data/CLEAN_HOA_SAT.json`,
+  PAM: `${PREFIX}/data/CLEAN_PAM_SAT.json`,
+  GEOT: `${PREFIX}/data/CLEAN_GEOT_SAT.json`,
+  PSDA: `${PREFIX}/data/CLEAN_PSDA_SAT.json`,
+  // Optional fallback masters (uncomment if you add them)
+  // HOA_FALLBACK: `${PREFIX}/data/MASTER_HOA_SAT.json`,
+  // PAM_FALLBACK: `${PREFIX}/data/MASTER_PAM_SAT.json`,
+  // GEOT_FALLBACK: `${PREFIX}/data/MASTER_GEOT_SAT.json`,
+  // PSDA_FALLBACK: `${PREFIX}/data/MASTER_PSDA_SAT.json`,
 };
 
-const REFERENCE_IMG = "/data/sat-reference.jpg";  // absolute from server root
+const REFERENCE_IMG = `${PREFIX}/data/sat-reference.jpg`;
 
 /* Difficulty blueprint (counts per module) */
 const BLUEPRINT = {
@@ -243,7 +242,6 @@ function generateItem(template, seed='demo'){
       let v = formatNumber(safeEvalOrLiteral(d,{...scope,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
-    // pad numeric distractors if needed
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -332,11 +330,6 @@ function takeUnique(arr, seedTag){
   return sh;
 }
 
-/* build module with progressive relaxation:
-   1) difficulty counts + light topic cap
-   2) difficulty counts only
-   3) any playable items until filled
-*/
 function buildModule(which, routeTag){
   const bp = (which===1) ? BLUEPRINT.M1 : (routeTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
   const target = bp.E + bp.M + bp.H;
@@ -371,23 +364,19 @@ function buildModule(which, routeTag){
       return false;
     }
 
-    const order = ['H','M','E']; // greedy hard→easy for quality
+    const order = ['H','M','E'];
     const need = {H:bp.H, M:bp.M, E:bp.E};
 
-    // Primary fill pass
     for(const k of order){
       for(let i=0;i<need[k];i++){
         if(!(await pullOne(k))){
-          // Try backfill from easier buckets
           if(k==='H' && (await pullOne('M'))) continue;
           if((k==='H' || k==='M') && (await pullOne('E'))) continue;
-          // If still short, stop primary pass
           break;
         }
       }
     }
 
-    // If still short, fill with any remaining playable (any difficulty) to hit target
     let attempts=0;
     const allRest=[...buckets.H, ...buckets.M, ...buckets.E];
     while(items.length<target && attempts<allRest.length){
@@ -403,19 +392,16 @@ function buildModule(which, routeTag){
     return {items, gens};
   }
 
-  // 1) difficulty + topic cap
   let built = tryFill(false);
-  if(built.items.length>= (bp.E+bp.M+bp.H)) return built;
+  if(built.items.length>= target) return built;
 
-  // 2) difficulty only
   built = tryFill(true);
-  if(built.items.length>= (bp.E+bp.M+bp.H)) return built;
+  if(built.items.length>= target) return built;
 
-  // 3) final safety: pull any playable from entire pool
   const all = takeUnique([...pool.H, ...pool.M, ...pool.E], seedBase+':any');
   const items=[], gens=[];
   for(const it of all){
-    if(items.length >= (bp.E+bp.M+bp.H)) break;
+    if(items.length >= target) break;
     try{
       const g=generateItem(it.template, `${seedBase}:any:${it.id}`);
       if(isPlayableGen(g)){ items.push(it); gens.push(g); usedIds.add(it.id); }
@@ -436,7 +422,7 @@ let state={
   timer:null,
   remaining:MODULE_TIME,
   route:'easy',
-  reviews:{1:null, 2:null},  // store review HTML for both modules
+  reviews:{1:null, 2:null},
 };
 
 function startTimer(){
@@ -554,7 +540,6 @@ function submitModule(){
     document.getElementById('btnBeginM2').onclick = () => beginModule2();
   }else{
     state.reviews[2] = moduleReviewHTML(2);
-    // Combined review
     let html = `<h2 style="margin:0 0 6px;">Practice Complete</h2>`;
     html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
     html += `<div style="margin:10px 0;">
