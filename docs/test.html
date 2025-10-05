@@ -7,34 +7,19 @@
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --cb-blue:#1f4db5;
-    --cb-blue-600:#113a92;
-    --cb-blue-100:#eaf0ff;
-    --ink:#0b1020;
-    --bg:#f7f9ff;
-    --card:#ffffff;
-    --muted:#66759a;
-    --ok:#0a7c3b;
-    --bad:#c4322b;
+    --cb-blue:#1f4db5; --cb-blue-600:#113a92; --cb-blue-100:#eaf0ff;
+    --ink:#0b1020; --bg:#f7f9ff; --card:#ffffff; --muted:#66759a;
+    --ok:#0a7c3b; --bad:#c4322b;
   }
   html,body{margin:0;height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
   header.topbar{
-    background:var(--cb-blue);
-    color:#fff;
-    padding:10px 16px;
-    display:flex;
-    align-items:center;
-    gap:16px;
-    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08);
-    position:sticky; top:0; z-index:20;
+    background:var(--cb-blue); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px;
+    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08); position:sticky; top:0; z-index:20;
   }
   .brand{font-weight:700}
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
   .spacer{flex:1}
-  .btn{
-    background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue);
-    font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;
-  }
+  .btn{background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue); font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   main{max-width:1050px; margin:16px auto; padding:0 16px 40px}
   .card{background:var(--card); border:1px solid #dfe6ff; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(31,77,181,.08)}
@@ -48,20 +33,14 @@
   .nav{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
   .tiny{font-size:13px; color:var(--muted)}
   .status{margin:10px 0; color:var(--muted)}
-  .green{color:var(--ok)}
-  .red{color:var(--bad)}
-  /* Pop-outs */
-  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
-       border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
-  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
-             display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
+  .green{color:var(--ok)} .red{color:var(--bad)}
+  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff; border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
+  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0; display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
   .pop .body{height:calc(100% - 42px); background:#fff; border-radius:0 0 14px 14px; overflow:hidden}
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
   .calc-iframe{width:100%; height:100%; border:0}
   .dock{display:flex; gap:10px}
-  .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
-  /* always-visible ID badge */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
 </style>
 </head>
@@ -129,6 +108,22 @@
 </div>
 
 <script>
+/* ---------- Guard any cross-origin history.replaceState attempts (no-op) -------- */
+(function(){
+  try{
+    const orig = history.replaceState.bind(history);
+    history.replaceState = function(state, title, url){
+      try{
+        if (typeof url === 'string') {
+          const dest = new URL(url, location.href);
+          if (dest.origin !== location.origin) return; // silently ignore bad cross-origin
+        }
+      }catch{ return; } // ignore malformed urls like "https://docs/..."
+      return orig(state, title, url);
+    };
+  }catch{}
+})();
+
 /* ---------------- URL normalize: fix accidental double slashes ---------------- */
 if (location.pathname.includes('//')) {
   const normalized = location.origin + location.pathname.replace(/\/{2,}/g,'/') + location.search + location.hash;
@@ -174,15 +169,11 @@ function safeEvalOrLiteral(expr,scope){
     return expr;
   }catch{ return expr; }
 }
-/* formatting + tidy */
 function tidy(s){
   return String(s||'')
-    .replace(/\+\s*-/g,' - ')
-    .replace(/-\s*-/g,' + ')
-    .replace(/\b1x\b/g,'x')
-    .replace(/\b-1x\b/g,'-x')
-    .replace(/\s{2,}/g,' ')
-    .replace(/\s([,.;!?])/g,'$1');
+    .replace(/\+\s*-/g,' - ').replace(/-\s*-/g,' + ')
+    .replace(/\b1x\b/g,'x').replace(/\b-1x\b/g,'-x')
+    .replace(/\s{2,}/g,' ').replace(/\s([,.;!?])/g,'$1');
 }
 function formatNumber(x,fmt){
   if(typeof x!=='number' || !isFinite(x)) return x;
@@ -264,8 +255,8 @@ async function loadAll(){
 }
 
 /* ------------------------------ Engine & dedupe ------------------------------ */
-const MODULE_TIME = 35*60; // 35 minutes
-const BRANCH_THRESHOLD = 14; // >=14 correct -> Hard
+const MODULE_TIME = 35*60;
+const BRANCH_THRESHOLD = 14;
 const BLUEPRINT = {
   M1: {E:7, M:10, H:5},
   M2easy: {E:9, M:11, H:2},
@@ -274,18 +265,11 @@ const BLUEPRINT = {
 
 let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
-/* NEW: store snapshots so Review shows both modules */
 const runHistory = [];
 
 let state={
-  module:1,
-  items:[],
-  gens:[],
-  answers:new Map(),
-  idx:0,
-  timer:null,
-  remaining:MODULE_TIME,
-  route:'easy'
+  module:1, items:[], gens:[], answers:new Map(),
+  idx:0, timer:null, remaining:MODULE_TIME, route:'easy'
 };
 
 function splitByDifficulty(all){
@@ -302,14 +286,12 @@ function takeUnique(arr, tag){
   for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
   return sh;
 }
-
-/* Family key to suppress near-duplicates per module */
 function familyKey(it){
   if(it.family) return String(it.family);
   const t = it.template || {};
   const norm = s => String(s||'').toLowerCase()
-      .replace(/\{\{[^}]+\}\}/g,'{}')   // params -> {}
-      .replace(/-?\d+(\.\d+)?/g,'#')    // numbers -> #
+      .replace(/\{\{[^}]+\}\}/g,'{}')
+      .replace(/-?\d+(\.\d+)?/g,'#')
       .replace(/\s+/g,' ')
       .trim();
   const stem = norm(t.stem);
@@ -318,7 +300,6 @@ function familyKey(it){
   const sub  = String(it.subtopic||'');
   return [dom,sub,stem,ans].join('|');
 }
-
 function isPlayableGen(g){
   const okAns = g && String(g.answer).trim()!=='';
   const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
@@ -343,8 +324,7 @@ function buildPlayableModule(which, branchTag){
     while(buckets[d].length){
       const it=buckets[d].shift();
       const fam=familyKey(it);
-      if(usedFamilies.has(fam)) continue; // same-family skip
-
+      if(usedFamilies.has(fam)) continue;
       try{
         const g=generateItem(it.template, `${seedBase}:${it.id}`);
         if(isPlayableGen(g)){
@@ -352,7 +332,7 @@ function buildPlayableModule(which, branchTag){
           outItems.push(it); outGens.push(g); usedIds.add(it.id);
           return true;
         }
-      }catch{/* skip bad item */}
+      }catch{}
     }
     return false;
   }
@@ -438,7 +418,6 @@ function submitModule(){
   const correct = scoreModule();
   const total = state.gens.length;
 
-  /* NEW: snapshot this module for cross-module review */
   runHistory.push({
     module: state.module,
     items: state.items.slice(),
