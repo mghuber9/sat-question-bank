@@ -7,14 +7,26 @@
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --cb-blue:#1f4db5; --cb-blue-600:#113a92; --cb-blue-100:#eaf0ff;
-    --ink:#0b1020; --bg:#f7f9ff; --card:#ffffff; --muted:#66759a;
-    --ok:#0a7c3b; --bad:#c4322b;
+    --cb-blue:#1f4db5;
+    --cb-blue-600:#113a92;
+    --cb-blue-100:#eaf0ff;
+    --ink:#0b1020;
+    --bg:#f7f9ff;
+    --card:#ffffff;
+    --muted:#66759a;
+    --ok:#0a7c3b;
+    --bad:#c4322b;
   }
   html,body{margin:0;height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
   header.topbar{
-    background:var(--cb-blue); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px;
-    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08); position:sticky; top:0; z-index:20;
+    background:var(--cb-blue);
+    color:#fff;
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 1px 0 var(--cb-blue-600) inset, 0 2px 8px rgba(0,0,0,.08);
+    position:sticky; top:0; z-index:20;
   }
   .brand{font-weight:700}
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
@@ -33,14 +45,21 @@
   .nav{display:flex; gap:10px; justify-content:space-between; margin-top:16px}
   .tiny{font-size:13px; color:var(--muted)}
   .status{margin:10px 0; color:var(--muted)}
-  .green{color:var(--ok)} .red{color:var(--bad)}
-  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff; border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
-  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0; display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
+  .green{color:var(--ok)}
+  .red{color:var(--bad)}
+  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
+
+  /* Pop-outs */
+  .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
+       border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
+  .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
+             display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
   .pop .body{height:calc(100% - 42px); background:#fff; border-radius:0 0 14px 14px; overflow:hidden}
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
   .calc-iframe{width:100%; height:100%; border:0}
-  .dock{display:flex; gap:10px}
+
+  /* Always-visible ID bubble */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
 </style>
 </head>
@@ -51,10 +70,8 @@
   <div id="hdrModule" class="pill">Module 1</div>
   <div id="hdrTimer" class="pill">35:00</div>
   <div class="spacer"></div>
-  <div class="dock">
-    <button id="btnRef" class="btn">Reference</button>
-    <button id="btnCalc" class="btn">Calculator</button>
-  </div>
+  <button id="btnRef" class="btn">Reference</button>
+  <button id="btnCalc" class="btn">Calculator</button>
 </header>
 
 <main>
@@ -108,35 +125,14 @@
 </div>
 
 <script>
-/* ---------- Guard any cross-origin history.replaceState attempts (no-op) -------- */
-(function(){
-  try{
-    const orig = history.replaceState.bind(history);
-    history.replaceState = function(state, title, url){
-      try{
-        if (typeof url === 'string') {
-          const dest = new URL(url, location.href);
-          if (dest.origin !== location.origin) return; // silently ignore bad cross-origin
-        }
-      }catch{ return; } // ignore malformed urls like "https://docs/..."
-      return orig(state, title, url);
-    };
-  }catch{}
-})();
-
-/* ---------------- URL normalize: fix accidental double slashes ---------------- */
-if (location.pathname.includes('//')) {
-  const normalized = location.origin + location.pathname.replace(/\/{2,}/g,'/') + location.search + location.hash;
-  location.replace(normalized);
-}
-
-/* ----------------------------- Error surface --------------------------------- */
+/* ------------------------------------------------------------------ */
+/* Small helpers                                                       */
+/* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
 
-/* -------------------------- RNG / helpers / eval ----------------------------- */
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
@@ -154,6 +150,7 @@ function pick(spec,rnd){
   throw new Error('Could not sample param (too restrictive).');
 }
 function renderStem(stem,vars){return String(stem||'').replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
+
 function evalExpr(expr,scope){
   const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
   if(typeof expr!=='string') return expr;
@@ -171,9 +168,12 @@ function safeEvalOrLiteral(expr,scope){
 }
 function tidy(s){
   return String(s||'')
-    .replace(/\+\s*-/g,' - ').replace(/-\s*-/g,' + ')
-    .replace(/\b1x\b/g,'x').replace(/\b-1x\b/g,'-x')
-    .replace(/\s{2,}/g,' ').replace(/\s([,.;!?])/g,'$1');
+    .replace(/\+\s*-/g,' - ')
+    .replace(/-\s*-/g,' + ')
+    .replace(/\b1x\b/g,'x')
+    .replace(/\b-1x\b/g,'-x')
+    .replace(/\s{2,}/g,' ')
+    .replace(/\s([,.;!?])/g,'$1');
 }
 function formatNumber(x,fmt){
   if(typeof x!=='number' || !isFinite(x)) return x;
@@ -182,7 +182,6 @@ function formatNumber(x,fmt){
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
 
-/* ------------------------------ Generator ------------------------------------ */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
@@ -223,39 +222,58 @@ function generateItem(template, seed='demo'){
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
 
-/* ------------------------------ Data & seed ---------------------------------- */
-const FILES={
-  HOA:'data/MASTER_HOA_SAT.json',
-  PAM:'data/MASTER_PAM_SAT.json',
-  PSDA:'data/MASTER_PSDA_SAT.json',
-  GEOT:'data/MASTER_GEOT_SAT.json'
-};
+/* ------------------------------------------------------------------ */
+/* Data loading + session seed (Codespaces-safe)                       */
+/* ------------------------------------------------------------------ */
 const REFERENCE_IMG = 'data/sat-reference.jpg';
+
+/* Try CLEAN_* first, then fall back to MASTER_* so this works in both setups */
+const FILE_SETS = [
+  ['data/CLEAN_HOA_SAT.json','data/MASTER_HOA_SAT.json'],
+  ['data/CLEAN_PAM_SAT.json','data/MASTER_PAM_SAT.json'],
+  ['data/CLEAN_PSDA_SAT.json','data/MASTER_PSDA_SAT.json'],
+  ['data/CLEAN_GEOT_SAT.json','data/MASTER_GEOT_SAT.json'],
+];
 
 const qs = new URLSearchParams(window.location.search);
 const sessionSeed =
   qs.get('seed') ||
   (() => {
-    try { const a = new Uint32Array(2); crypto.getRandomValues(a);
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
       return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);
-    } catch { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+    } catch {
+      return Date.now().toString(36)+Math.random().toString(36).slice(2);
+    }
   })();
+// No history.replaceState here (Codespaces warning)
 document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
 
 async function loadAll(){
-  const names=Object.keys(FILES);
   const all=[];
-  for(const n of names){
-    const resp = await fetch(FILES[n], {cache:'no-store'});
-    if(!resp.ok) throw new Error('Failed to load '+n);
-    const arr = await resp.json();
-    all.push(...arr);
+  for(const alts of FILE_SETS){
+    let loaded=false;
+    for(const url of alts){
+      try{
+        const resp = await fetch(url, {cache:'no-store'});
+        if(resp.ok){
+          const arr = await resp.json();
+          all.push(...arr);
+          loaded=true;
+          break;
+        }
+      }catch{/* try next alt */}
+    }
+    if(!loaded){ console.warn('Could not load any file from', alts); }
   }
   return all;
 }
 
-/* ------------------------------ Engine & dedupe ------------------------------ */
-const MODULE_TIME = 35*60;
+/* ------------------------------------------------------------------ */
+/* Test engine + review for both modules                               */
+/* ------------------------------------------------------------------ */
+const MODULE_TIME = 35*60; // 35 minutes
 const BRANCH_THRESHOLD = 14;
 const BLUEPRINT = {
   M1: {E:7, M:10, H:5},
@@ -265,11 +283,23 @@ const BLUEPRINT = {
 
 let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
-const runHistory = [];
 
+/* live state for the module currently on screen */
 let state={
-  module:1, items:[], gens:[], answers:new Map(),
-  idx:0, timer:null, remaining:MODULE_TIME, route:'easy'
+  module:1,
+  items:[],
+  gens:[],
+  answers:new Map(),
+  idx:0,
+  timer:null,
+  remaining:MODULE_TIME,
+  route:'easy'
+};
+
+/* persistent snapshots for review later */
+const reviewStore = {
+  1:null, // {items, gens, answers}
+  2:null
 };
 
 function splitByDifficulty(all){
@@ -279,60 +309,37 @@ function splitByDifficulty(all){
     H: all.filter(x=>(x.difficulty||'M')==='H'),
   };
 }
-function takeUnique(arr, tag){
-  const rnd=makeRng(tag);
+function takeUnique(arr, seedTag){
+  const rnd=makeRng(seedTag);
   const a = arr.filter(x=>!usedIds.has(x.id));
-  const sh=a.slice();
+  const sh = a.slice();
   for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
   return sh;
-}
-function familyKey(it){
-  if(it.family) return String(it.family);
-  const t = it.template || {};
-  const norm = s => String(s||'').toLowerCase()
-      .replace(/\{\{[^}]+\}\}/g,'{}')
-      .replace(/-?\d+(\.\d+)?/g,'#')
-      .replace(/\s+/g,' ')
-      .trim();
-  const stem = norm(t.stem);
-  const ans  = norm(t.answer);
-  const dom  = String(it.domain||'');
-  const sub  = String(it.subtopic||'');
-  return [dom,sub,stem,ans].join('|');
 }
 function isPlayableGen(g){
   const okAns = g && String(g.answer).trim()!=='';
   const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
-  const okStem = g && String(g.stem||'').trim().length>5;
+  const okStem = g && String(g.stem||'').trim().length>3;
   return okAns && okChoices && okStem;
 }
-
 function buildPlayableModule(which, branchTag){
   const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
   const need = [{d:'H',n:bp.H},{d:'M',n:bp.M},{d:'E',n:bp.E}];
   const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
   const tagBase  = `m${which}:${branchTag}:${sessionSeed}`;
   const outItems=[], outGens=[];
-  const usedFamilies=new Set();
-  const buckets={
-    H:takeUnique(pool.H, tagBase+':H'),
-    M:takeUnique(pool.M, tagBase+':M'),
-    E:takeUnique(pool.E, tagBase+':E')
-  };
+  const buckets={H:takeUnique(pool.H, tagBase+':H'), M:takeUnique(pool.M, tagBase+':M'), E:takeUnique(pool.E, tagBase+':E')};
 
   function tryPull(d){
     while(buckets[d].length){
       const it=buckets[d].shift();
-      const fam=familyKey(it);
-      if(usedFamilies.has(fam)) continue;
       try{
         const g=generateItem(it.template, `${seedBase}:${it.id}`);
         if(isPlayableGen(g)){
-          usedFamilies.add(fam);
           outItems.push(it); outGens.push(g); usedIds.add(it.id);
           return true;
         }
-      }catch{}
+      }catch{/* skip */}
     }
     return false;
   }
@@ -353,7 +360,6 @@ function buildPlayableModule(which, branchTag){
   return {items:itemsSh, gens:gensSh};
 }
 
-/* ------------------------------ UI flow -------------------------------------- */
 function startTimer(){
   clearInterval(state.timer);
   const el = document.getElementById('hdrTimer');
@@ -404,88 +410,105 @@ function show(idx){
   document.getElementById('btnSubmitModule').style.display = last? '': 'none';
 }
 
-function scoreModule(){
+function scoreModule(items, gens, answers){
   let correct=0;
-  state.gens.forEach((g,i)=>{
-    const a = state.answers.get(i);
+  gens.forEach((g,i)=>{
+    const a = answers.get(i);
     if(String(a)===String(g.answer)) correct++;
   });
   return correct;
 }
 
+function snapshotCurrentModule(){
+  return {
+    items: state.items.slice(),
+    gens:  state.gens.slice(),
+    answers: new Map(state.answers)
+  };
+}
+
 function submitModule(){
   clearInterval(state.timer);
-  const correct = scoreModule();
+
+  // Save a snapshot for review
+  reviewStore[state.module] = snapshotCurrentModule();
+
+  const correct = scoreModule(state.items, state.gens, state.answers);
   const total = state.gens.length;
-
-  runHistory.push({
-    module: state.module,
-    items: state.items.slice(),
-    gens: state.gens.slice(),
-    answersEntries: Array.from(state.answers.entries())
-  });
-
-  const sum = document.getElementById('summary');
-  sum.style.display='';
-  document.getElementById('qCard').style.display='none';
 
   const branch = (state.module===1)
     ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
     : state.route;
+
+  const sum = document.getElementById('summary');
+  sum.style.display='';
+  document.getElementById('qCard').style.display='none';
 
   let html = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>`;
   html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
   html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
 
   if(state.module===1){
+    state.route = branch;
     html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
-    html += `<div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`;
+    html += `<div style="margin-top:12px">
+               <button id="btnBeginM2" class="btn">Begin Module 2</button>
+               <button id="btnReviewM1" class="btn" style="margin-left:8px">Review Module 1</button>
+             </div>`;
   } else {
-    html += `<div style="margin-top:12px"><button id="btnNew" class="btn">New Test (new seed)</button>
-             <button id="btnReview" class="btn" style="margin-left:8px">Review answers</button></div>`;
+    html += `<div style="margin-top:12px">
+               <button id="btnNew" class="btn">New Test (new seed)</button>
+               <button id="btnReviewM1" class="btn" style="margin-left:8px">Review Module 1</button>
+               <button id="btnReviewM2" class="btn" style="margin-left:8px">Review Module 2</button>
+               <button id="btnReviewBoth" class="btn" style="margin-left:8px">Review Both</button>
+             </div>`;
   }
-
-  document.getElementById('summary').innerHTML = html;
+  sum.innerHTML = html;
 
   if(state.module===1){
-    state.route = branch;
     document.getElementById('btnBeginM2').onclick = () => beginModule2();
+    document.getElementById('btnReviewM1').onclick = () => reviewAnswers(1);
   }else{
     document.getElementById('btnNew').onclick = ()=>{
       const u=new URL(location.href);
       u.searchParams.delete('seed'); location.href=u.toString();
     };
-    document.getElementById('btnReview').onclick = ()=> reviewAnswers();
+    document.getElementById('btnReviewM1').onclick = () => reviewAnswers(1);
+    document.getElementById('btnReviewM2').onclick = () => reviewAnswers(2);
+    document.getElementById('btnReviewBoth').onclick = () => reviewAnswers('both');
   }
 }
 
-function reviewAnswers(){
-  const sum = document.getElementById('summary');
-  let html = `<h2 style="margin:0 0 8px;">Review — All Modules</h2>`;
-
-  if(runHistory.length===0){
-    html += `<p class="tiny">No completed modules to review.</p>`;
-  }
-
-  runHistory.forEach(mod => {
-    const ansMap = new Map(mod.answersEntries);
-    html += `<h3 style="margin:12px 0 6px;">Module ${mod.module}</h3>`;
-    mod.gens.forEach((g,i)=>{
-      const your = ansMap.get(i);
-      const ok = String(your)===String(g.answer);
-      const id = mod.items[i]?.id ?? '—';
-      html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
-        <div class="tiny">Q ${i+1} • ID ${id}</div>
-        <div>${g.stem}</div>
-        <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">
-          Your answer: ${your??'—'} • Correct: ${g.answer}
-        </div>
-      </div>`;
-    });
+function renderReviewBlock(title, snap){
+  let html = `<h3 style="margin:10px 0 6px">${title}</h3>`;
+  snap.gens.forEach((g,i)=>{
+    const your = snap.answers.get(i);
+    const ok = String(your)===String(g.answer);
+    html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
+      <div class="tiny">Q ${i+1} • ID ${snap.items[i].id||'—'}</div>
+      <div>${g.stem}</div>
+      <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${your??'—'} • Correct: ${g.answer}</div>
+    </div>`;
   });
+  return html;
+}
 
+function reviewAnswers(which){
+  const sum = document.getElementById('summary');
+  let html = `<h2 style="margin:0 0 8px;">Review</h2>`;
+  if(which==='both'){
+    if(reviewStore[1]) html += renderReviewBlock('Module 1', reviewStore[1]);
+    if(reviewStore[2]) html += renderReviewBlock('Module 2', reviewStore[2]);
+  } else {
+    const snap = reviewStore[which];
+    if(!snap){ sum.innerHTML = `<p>Nothing to review for Module ${which} yet.</p>`; return; }
+    html += renderReviewBlock(`Module ${which}`, snap);
+  }
   html += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
   sum.innerHTML = html;
+  sum.style.display='';
+  document.getElementById('qCard').style.display='none';
+  document.getElementById('intro').style.display='none';
 }
 
 async function beginModule1(){
@@ -526,13 +549,15 @@ function beginModule2(){
   startTimer();
 }
 
-/* ------------------------------- Wiring -------------------------------------- */
+/* ------------------------------------------------------------------ */
+/* UI wiring                                                           */
+/* ------------------------------------------------------------------ */
 document.getElementById('btnStart').addEventListener('click', beginModule1);
 document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1));
 document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
 document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
 
-/* Pop-outs drag */
+/* Pop-outs */
 function enableDrag(popId){
   const pop=document.getElementById(popId);
   const head = pop.querySelector('.head');
