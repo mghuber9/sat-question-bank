@@ -31,7 +31,10 @@
   .brand{font-weight:700}
   .pill{background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 10px; border-radius:999px; font-weight:600}
   .spacer{flex:1}
-  .btn{background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue); font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;}
+  .btn{
+    background:#fff; color:var(--cb-blue); border:1px solid var(--cb-blue);
+    font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer;
+  }
   .btn:disabled{opacity:.5;cursor:not-allowed}
   main{max-width:1050px; margin:16px auto; padding:0 16px 40px}
   .card{background:var(--card); border:1px solid #dfe6ff; border-radius:14px; padding:16px; box-shadow:0 3px 12px rgba(31,77,181,.08)}
@@ -47,9 +50,6 @@
   .status{margin:10px 0; color:var(--muted)}
   .green{color:var(--ok)}
   .red{color:var(--bad)}
-  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
-
-  /* Pop-outs */
   .pop{position:fixed; right:20px; bottom:20px; width:520px; height:420px; background:#fff;
        border:1px solid #ccd6ff; border-radius:14px; box-shadow:0 20px 50px rgba(17,58,146,.28); z-index:99; display:none}
   .pop .head{user-select:none; cursor:move; height:42px; background:var(--cb-blue); color:#fff; border-radius:14px 14px 0 0;
@@ -58,8 +58,12 @@
   .pop .x{background:transparent; border:1px solid rgba(255,255,255,.75); color:#fff; border-radius:8px; padding:4px 8px; cursor:pointer}
   .ref-img{width:100%; height:100%; object-fit:contain; background:#fff}
   .calc-iframe{width:100%; height:100%; border:0}
+  .dock{display:flex; gap:10px}
+  .dock .btn{background:#fff; color:var(--cb-blue); border-color:#cfe0ff}
+  .alert{padding:10px 12px; border-radius:10px; background:#fff8d6; border:1px solid #ffe487}
+  .chip{padding:2px 8px;border-radius:999px;background:var(--cb-blue-100); border:1px solid #cfe0ff; color:#143b8d; font-weight:600}
 
-  /* Always-visible ID bubble */
+  /* always-visible debug badge (ID + module) */
   .dbg{margin-left:8px; background:#eef3ff; border:1px solid #cfe0ff; color:#113a92; padding:4px 8px; border-radius:999px; font-weight:600}
 </style>
 </head>
@@ -70,8 +74,10 @@
   <div id="hdrModule" class="pill">Module 1</div>
   <div id="hdrTimer" class="pill">35:00</div>
   <div class="spacer"></div>
-  <button id="btnRef" class="btn">Reference</button>
-  <button id="btnCalc" class="btn">Calculator</button>
+  <div class="dock">
+    <button id="btnRef" class="btn">Reference</button>
+    <button id="btnCalc" class="btn">Calculator</button>
+  </div>
 </header>
 
 <main>
@@ -90,6 +96,7 @@
   <div id="qCard" class="card" style="display:none">
     <div class="row">
       <div id="qNum" class="qnum">Q 1</div>
+      <!-- always-visible debug badge -->
       <div id="qDbg" class="dbg">ID —</div>
       <div class="spacer"></div>
     </div>
@@ -126,18 +133,48 @@
 
 <script>
 /* ------------------------------------------------------------------ */
-/* Small helpers                                                       */
+/* Configuration                                                       */
+/* ------------------------------------------------------------------ */
+
+/* JSON files to load (missing files are skipped gracefully) */
+const FILES = {
+  HOA: "/data/CLEAN_HOA_SAT.json",
+  PAM: "/data/CLEAN_PAM_SAT.json",
+  GEOT: "/data/CLEAN_GEOT_SAT.json",
+  PSDA: "/data/CLEAN_PSDA_SAT.json",
+  // Optional fallback masters (commented; will only be used if you add them)
+  // HOA_FALLBACK: "/data/MASTER_HOA_SAT.json",
+  // PAM_FALLBACK: "/data/MASTER_PAM_SAT.json",
+  // GEOT_FALLBACK: "/data/MASTER_GEOT_SAT.json",
+  // PSDA_FALLBACK: "/data/MASTER_PSDA_SAT.json",
+};
+
+const REFERENCE_IMG = "/data/sat-reference.jpg";  // absolute from server root
+
+/* Difficulty blueprint (counts per module) */
+const BLUEPRINT = {
+  M1:     {E:7, M:10, H:5},  // Module 1
+  M2easy: {E:9, M:11, H:2},  // Module 2 routed EASY
+  M2hard: {E:3, M:12, H:7},  // Module 2 routed HARD
+};
+/* Route threshold: >= this correct on M1 → HARD route */
+const BRANCH_THRESHOLD = 14;
+/* Time per module (seconds) */
+const MODULE_TIME = 35*60;
+/* Light topic diversity guard per module (cap per topic)  */
+const MAX_PER_TOPIC = 6;
+
+/* ------------------------------------------------------------------ */
+/* Seed, utilities, safe eval                                         */
 /* ------------------------------------------------------------------ */
 window.addEventListener('error', e=>{
   const el=document.getElementById('status');
   if(el) el.textContent='⚠️ Script error: '+(e.error?.message||e.message||'unknown');
 });
-
 function cyrb128(str){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=Math.imul(h1^k,597399067);h2=Math.imul(h2^k,2869860233);h3=Math.imul(h3^k,951274213);h4=Math.imul(h4^k,2716044179);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044179);return[(h1^h2^h3^h4)>>>0];}
 function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}}
 function makeRng(seed){const[s]=cyrb128(String(seed));return mulberry32(s);}
 function seededShuffle(arr, seed){const rnd=makeRng(seed);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-
 function pick(spec,rnd){
   if(!spec) throw new Error('Bad param spec');
   if(Array.isArray(spec.values)){ const a=spec.values; return a[Math.floor(rnd()*a.length)]; }
@@ -150,7 +187,6 @@ function pick(spec,rnd){
   throw new Error('Could not sample param (too restrictive).');
 }
 function renderStem(stem,vars){return String(stem||'').replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g,(_,k)=>(k in vars?String(vars[k]):`{{${k}}}`));}
-
 function evalExpr(expr,scope){
   const keys=['Math','Number',...Object.keys(scope)], vals=[Math,Number,...Object.values(scope)];
   if(typeof expr!=='string') return expr;
@@ -182,11 +218,15 @@ function formatNumber(x,fmt){
   const p=Math.pow(10,3); return Math.round(x*p)/p;
 }
 
+/* ------------------------------------------------------------------ */
+/* Generation + playability                                            */
+/* ------------------------------------------------------------------ */
 function generateItem(template, seed='demo'){
   const rnd=makeRng(seed);
   const { stem, params={}, derived={}, constraints=[], answer, distractors=[] } = template;
   const fmt = template.format || template.display || null;
   const MAX=250;
+
   for(let attempt=0;attempt<MAX;attempt++){
     const P={}; for(const[k,s] of Object.entries(params)) P[k]=pick(s,rnd);
     const D={}; let okDer=true;
@@ -203,6 +243,7 @@ function generateItem(template, seed='demo'){
       let v = formatNumber(safeEvalOrLiteral(d,{...scope,ans}), fmt);
       if(String(v)!==String(ans)) opts.push(v);
     }
+    // pad numeric distractors if needed
     if(typeof ans==='number' && opts.length<3){
       const used=new Set([String(ans), ...opts.map(String)]);
       const mag = Math.max(1e-6, Math.pow(10, Math.floor(Math.log10(Math.abs(ans)||1))-1));
@@ -221,20 +262,40 @@ function generateItem(template, seed='demo'){
   }
   throw new Error('Constraint not satisfiable after multiple attempts');
 }
+function isPlayableGen(g){
+  const okAns = g && String(g.answer).trim()!=='';
+  const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
+  const okStem = g && String(g.stem||'').trim().length>10;
+  return okAns && okChoices && okStem;
+}
 
 /* ------------------------------------------------------------------ */
-/* Data loading + session seed (Codespaces-safe)                       */
+/* Data loading                                                        */
 /* ------------------------------------------------------------------ */
-const REFERENCE_IMG = 'data/sat-reference.jpg';
+async function safeFetchJson(url){
+  try{
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){
+    console.warn('Skip load', url, String(e));
+    return null;
+  }
+}
+async function loadAll(){
+  const urls = Object.values(FILES);
+  const all=[];
+  for(const u of urls){
+    if(!u) continue;
+    const arr = await safeFetchJson(u);
+    if(Array.isArray(arr)) all.push(...arr);
+  }
+  return all;
+}
 
-/* Try CLEAN_* first, then fall back to MASTER_* so this works in both setups */
-const FILE_SETS = [
-  ['data/CLEAN_HOA_SAT.json','data/MASTER_HOA_SAT.json'],
-  ['data/CLEAN_PAM_SAT.json','data/MASTER_PAM_SAT.json'],
-  ['data/CLEAN_PSDA_SAT.json','data/MASTER_PSDA_SAT.json'],
-  ['data/CLEAN_GEOT_SAT.json','data/MASTER_GEOT_SAT.json'],
-];
-
+/* ------------------------------------------------------------------ */
+/* Session seed (no replaceState—Codespaces-safe)                      */
+/* ------------------------------------------------------------------ */
 const qs = new URLSearchParams(window.location.search);
 const sessionSeed =
   qs.get('seed') ||
@@ -242,65 +303,18 @@ const sessionSeed =
     try {
       const a = new Uint32Array(2);
       crypto.getRandomValues(a);
-      return Date.now().toString(36)+a[0].toString(36)+a[1].toString(36);
+      return Date.now().toString(36) + a[0].toString(36) + a[1].toString(36);
     } catch {
-      return Date.now().toString(36)+Math.random().toString(36).slice(2);
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
     }
   })();
-// No history.replaceState here (Codespaces warning)
 document.getElementById('seedEcho').textContent = 'Seed: ' + sessionSeed;
 
-async function loadAll(){
-  const all=[];
-  for(const alts of FILE_SETS){
-    let loaded=false;
-    for(const url of alts){
-      try{
-        const resp = await fetch(url, {cache:'no-store'});
-        if(resp.ok){
-          const arr = await resp.json();
-          all.push(...arr);
-          loaded=true;
-          break;
-        }
-      }catch{/* try next alt */}
-    }
-    if(!loaded){ console.warn('Could not load any file from', alts); }
-  }
-  return all;
-}
-
 /* ------------------------------------------------------------------ */
-/* Test engine + review for both modules                               */
+/* Builder (with fallback and topic diversity guard)                   */
 /* ------------------------------------------------------------------ */
-const MODULE_TIME = 35*60; // 35 minutes
-const BRANCH_THRESHOLD = 14;
-const BLUEPRINT = {
-  M1: {E:7, M:10, H:5},
-  M2easy: {E:9, M:11, H:2},
-  M2hard: {E:3, M:12, H:7}
-};
-
 let pool={E:[],M:[],H:[]};
 let usedIds=new Set();
-
-/* live state for the module currently on screen */
-let state={
-  module:1,
-  items:[],
-  gens:[],
-  answers:new Map(),
-  idx:0,
-  timer:null,
-  remaining:MODULE_TIME,
-  route:'easy'
-};
-
-/* persistent snapshots for review later */
-const reviewStore = {
-  1:null, // {items, gens, answers}
-  2:null
-};
 
 function splitByDifficulty(all){
   return {
@@ -309,6 +323,7 @@ function splitByDifficulty(all){
     H: all.filter(x=>(x.difficulty||'M')==='H'),
   };
 }
+function normTopic(t){ return (t||'').toString().trim().toUpperCase(); }
 function takeUnique(arr, seedTag){
   const rnd=makeRng(seedTag);
   const a = arr.filter(x=>!usedIds.has(x.id));
@@ -316,49 +331,113 @@ function takeUnique(arr, seedTag){
   for(let i=sh.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
   return sh;
 }
-function isPlayableGen(g){
-  const okAns = g && String(g.answer).trim()!=='';
-  const okChoices = Array.isArray(g?.distractors) && g.distractors.length>=3;
-  const okStem = g && String(g.stem||'').trim().length>3;
-  return okAns && okChoices && okStem;
-}
-function buildPlayableModule(which, branchTag){
-  const bp = (which===1) ? BLUEPRINT.M1 : (branchTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
-  const need = [{d:'H',n:bp.H},{d:'M',n:bp.M},{d:'E',n:bp.E}];
-  const seedBase = `module${which}:${branchTag}:${sessionSeed}`;
-  const tagBase  = `m${which}:${branchTag}:${sessionSeed}`;
-  const outItems=[], outGens=[];
-  const buckets={H:takeUnique(pool.H, tagBase+':H'), M:takeUnique(pool.M, tagBase+':M'), E:takeUnique(pool.E, tagBase+':E')};
 
-  function tryPull(d){
-    while(buckets[d].length){
-      const it=buckets[d].shift();
-      try{
-        const g=generateItem(it.template, `${seedBase}:${it.id}`);
-        if(isPlayableGen(g)){
-          outItems.push(it); outGens.push(g); usedIds.add(it.id);
-          return true;
+/* build module with progressive relaxation:
+   1) difficulty counts + light topic cap
+   2) difficulty counts only
+   3) any playable items until filled
+*/
+function buildModule(which, routeTag){
+  const bp = (which===1) ? BLUEPRINT.M1 : (routeTag==='hard' ? BLUEPRINT.M2hard : BLUEPRINT.M2easy);
+  const target = bp.E + bp.M + bp.H;
+  const seedBase = `module${which}:${routeTag}:${sessionSeed}`;
+
+  function tryFill(byDifficultyOnly=false){
+    const items=[], gens=[];
+    const topicCount=new Map();
+    function withinCap(topic){
+      if(byDifficultyOnly) return true;
+      const k=normTopic(topic);
+      const c=topicCount.get(k)||0;
+      return c<MAX_PER_TOPIC;
+    }
+    function bump(topic){
+      const k=normTopic(topic); topicCount.set(k,(topicCount.get(k)||0)+1);
+    }
+    const buckets={H:takeUnique(pool.H, seedBase+':H'), M:takeUnique(pool.M, seedBase+':M'), E:takeUnique(pool.E, seedBase+':E')};
+
+    async function pullOne(bucketKey){
+      while(buckets[bucketKey].length){
+        const it=buckets[bucketKey].shift();
+        try{
+          if(!withinCap(it.topic)) continue;
+          const g=generateItem(it.template, `${seedBase}:${it.id}`);
+          if(isPlayableGen(g)){
+            items.push(it); gens.push(g); usedIds.add(it.id); bump(it.topic);
+            return true;
+          }
+        }catch{/* skip bad render */}
+      }
+      return false;
+    }
+
+    const order = ['H','M','E']; // greedy hard→easy for quality
+    const need = {H:bp.H, M:bp.M, E:bp.E};
+
+    // Primary fill pass
+    for(const k of order){
+      for(let i=0;i<need[k];i++){
+        if(!(await pullOne(k))){
+          // Try backfill from easier buckets
+          if(k==='H' && (await pullOne('M'))) continue;
+          if((k==='H' || k==='M') && (await pullOne('E'))) continue;
+          // If still short, stop primary pass
+          break;
         }
-      }catch{/* skip */}
+      }
     }
-    return false;
+
+    // If still short, fill with any remaining playable (any difficulty) to hit target
+    let attempts=0;
+    const allRest=[...buckets.H, ...buckets.M, ...buckets.E];
+    while(items.length<target && attempts<allRest.length){
+      const it=allRest[attempts++];
+      try{
+        if(!withinCap(it.topic)) continue;
+        const g=generateItem(it.template, `${seedBase}:pad:${it.id}`);
+        if(isPlayableGen(g)){
+          items.push(it); gens.push(g); usedIds.add(it.id); bump(it.topic);
+        }
+      }catch{}
+    }
+    return {items, gens};
   }
 
-  for(const req of need){
-    for(let k=0;k<req.n;k++){
-      if(tryPull(req.d)) continue;
-      if(req.d==='H' && tryPull('M')) continue;
-      if((req.d==='H'||req.d==='M') && tryPull('E')) continue;
-      if(tryPull('H') || tryPull('M') || tryPull('E')) continue;
-      break;
-    }
-  }
+  // 1) difficulty + topic cap
+  let built = tryFill(false);
+  if(built.items.length>= (bp.E+bp.M+bp.H)) return built;
 
-  const order = seededShuffle([...outItems.keys()], tagBase+':order');
-  const itemsSh = order.map(i=>outItems[i]);
-  const gensSh  = order.map(i=>outGens[i]);
-  return {items:itemsSh, gens:gensSh};
+  // 2) difficulty only
+  built = tryFill(true);
+  if(built.items.length>= (bp.E+bp.M+bp.H)) return built;
+
+  // 3) final safety: pull any playable from entire pool
+  const all = takeUnique([...pool.H, ...pool.M, ...pool.E], seedBase+':any');
+  const items=[], gens=[];
+  for(const it of all){
+    if(items.length >= (bp.E+bp.M+bp.H)) break;
+    try{
+      const g=generateItem(it.template, `${seedBase}:any:${it.id}`);
+      if(isPlayableGen(g)){ items.push(it); gens.push(g); usedIds.add(it.id); }
+    }catch{}
+  }
+  return {items, gens};
 }
+
+/* ------------------------------------------------------------------ */
+/* App state + flow                                                    */
+/* ------------------------------------------------------------------ */
+let state={
+  module:1,
+  items:[],
+  gens:[],
+  answers:new Map(),
+  idx:0,
+  timer:null,
+  remaining:MODULE_TIME,
+  route:'easy',
+  reviews:{1:null, 2:null},  // store review HTML for both modules
+};
 
 function startTimer(){
   clearInterval(state.timer);
@@ -377,6 +456,20 @@ function startTimer(){
 
 function show(idx){
   const total = state.gens.length;
+  if(total===0){
+    document.getElementById('intro').style.display='none';
+    document.getElementById('qCard').style.display='none';
+    const s = document.getElementById('summary');
+    s.style.display='';
+    s.innerHTML = `
+      <h2 style="margin:0 0 6px;">Couldn’t build this module</h2>
+      <p class="tiny">We tried topic-aware, difficulty-only, and “any playable” fallbacks but still ran short. This usually means the bank is extremely constrained by tags or many items failed playability checks.</p>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="location.reload()">Try again</button>
+      </div>`;
+    return;
+  }
+
   state.idx = Math.max(0, Math.min(idx, total-1));
   const g = state.gens[state.idx];
   const t = state.items[state.idx];
@@ -387,6 +480,7 @@ function show(idx){
 
   document.getElementById('qNum').textContent=`Q ${state.idx+1} of ${total}`;
   document.getElementById('qDbg').textContent = `ID ${t.id||'—'}`;
+
   document.getElementById('qStem').textContent = g.stem;
 
   const opts = seededShuffle([g.answer, ...g.distractors], `opts:${sessionSeed}:${state.module}:${state.idx}`);
@@ -410,82 +504,24 @@ function show(idx){
   document.getElementById('btnSubmitModule').style.display = last? '': 'none';
 }
 
-function scoreModule(items, gens, answers){
+function scoreModule(){
   let correct=0;
-  gens.forEach((g,i)=>{
-    const a = answers.get(i);
+  state.gens.forEach((g,i)=>{
+    const a = state.answers.get(i);
     if(String(a)===String(g.answer)) correct++;
   });
   return correct;
 }
 
-function snapshotCurrentModule(){
-  return {
-    items: state.items.slice(),
-    gens:  state.gens.slice(),
-    answers: new Map(state.answers)
-  };
-}
-
-function submitModule(){
-  clearInterval(state.timer);
-
-  // Save a snapshot for review
-  reviewStore[state.module] = snapshotCurrentModule();
-
-  const correct = scoreModule(state.items, state.gens, state.answers);
-  const total = state.gens.length;
-
-  const branch = (state.module===1)
-    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
-    : state.route;
-
-  const sum = document.getElementById('summary');
-  sum.style.display='';
-  document.getElementById('qCard').style.display='none';
-
-  let html = `<h2 style="margin:0 0 6px;">Module ${state.module} complete</h2>`;
-  html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
-  html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
-
-  if(state.module===1){
-    state.route = branch;
-    html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
-    html += `<div style="margin-top:12px">
-               <button id="btnBeginM2" class="btn">Begin Module 2</button>
-               <button id="btnReviewM1" class="btn" style="margin-left:8px">Review Module 1</button>
-             </div>`;
-  } else {
-    html += `<div style="margin-top:12px">
-               <button id="btnNew" class="btn">New Test (new seed)</button>
-               <button id="btnReviewM1" class="btn" style="margin-left:8px">Review Module 1</button>
-               <button id="btnReviewM2" class="btn" style="margin-left:8px">Review Module 2</button>
-               <button id="btnReviewBoth" class="btn" style="margin-left:8px">Review Both</button>
-             </div>`;
-  }
-  sum.innerHTML = html;
-
-  if(state.module===1){
-    document.getElementById('btnBeginM2').onclick = () => beginModule2();
-    document.getElementById('btnReviewM1').onclick = () => reviewAnswers(1);
-  }else{
-    document.getElementById('btnNew').onclick = ()=>{
-      const u=new URL(location.href);
-      u.searchParams.delete('seed'); location.href=u.toString();
-    };
-    document.getElementById('btnReviewM1').onclick = () => reviewAnswers(1);
-    document.getElementById('btnReviewM2').onclick = () => reviewAnswers(2);
-    document.getElementById('btnReviewBoth').onclick = () => reviewAnswers('both');
-  }
-}
-
-function renderReviewBlock(title, snap){
-  let html = `<h3 style="margin:10px 0 6px">${title}</h3>`;
-  snap.gens.forEach((g,i)=>{
-    const your = snap.answers.get(i);
+function moduleReviewHTML(modNum){
+  let html = `<h2 style="margin:0 0 8px;">Module ${modNum} — Review</h2>`;
+  state.gens.forEach((g,i)=>{
+    const your = state.answers.get(i);
     const ok = String(your)===String(g.answer);
+    const item = state.items[i];
+    const tpc = item.topic ? `<span class="chip" style="margin-left:6px">${item.topic}</span>` : '';
     html += `<div style="padding:10px 0;border-top:1px solid #eef3ff">
-      <div class="tiny">Q ${i+1} • ID ${snap.items[i].id||'—'}</div>
+      <div class="tiny">Q ${i+1} • ID ${item.id||'—'} ${tpc}</div>
       <div>${g.stem}</div>
       <div class="tiny ${ok?'green':'red'}" style="margin-top:6px">Your answer: ${your??'—'} • Correct: ${g.answer}</div>
     </div>`;
@@ -493,22 +529,51 @@ function renderReviewBlock(title, snap){
   return html;
 }
 
-function reviewAnswers(which){
+function submitModule(){
+  clearInterval(state.timer);
+  const correct = scoreModule();
+  const total = state.gens.length;
   const sum = document.getElementById('summary');
-  let html = `<h2 style="margin:0 0 8px;">Review</h2>`;
-  if(which==='both'){
-    if(reviewStore[1]) html += renderReviewBlock('Module 1', reviewStore[1]);
-    if(reviewStore[2]) html += renderReviewBlock('Module 2', reviewStore[2]);
-  } else {
-    const snap = reviewStore[which];
-    if(!snap){ sum.innerHTML = `<p>Nothing to review for Module ${which} yet.</p>`; return; }
-    html += renderReviewBlock(`Module ${which}`, snap);
-  }
-  html += `<div style="margin-top:12px"><button class="btn" onclick="location.reload()">Back</button></div>`;
-  sum.innerHTML = html;
   sum.style.display='';
   document.getElementById('qCard').style.display='none';
-  document.getElementById('intro').style.display='none';
+
+  const branch = (state.module===1)
+    ? (correct>=BRANCH_THRESHOLD? 'hard' : 'easy')
+    : state.route;
+
+  if(state.module===1){
+    state.reviews[1] = moduleReviewHTML(1);
+    let html = `<h2 style="margin:0 0 6px;">Module 1 complete</h2>`;
+    html += `<p><strong>Score:</strong> ${correct} / ${total} ${correct>=BRANCH_THRESHOLD?'<span class="green">(Good!)</span>':''}</p>`;
+    html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
+    html += `<div class="alert" style="margin-top:10px">Routing to <strong>${branch.toUpperCase()}</strong> Module 2 (threshold: ${BRANCH_THRESHOLD}+ correct → Hard).</div>`;
+    html += `<div style="margin-top:12px"><button id="btnBeginM2" class="btn">Begin Module 2</button></div>`;
+    sum.innerHTML = html;
+
+    state.route = branch;
+    document.getElementById('btnBeginM2').onclick = () => beginModule2();
+  }else{
+    state.reviews[2] = moduleReviewHTML(2);
+    // Combined review
+    let html = `<h2 style="margin:0 0 6px;">Practice Complete</h2>`;
+    html += `<p class="tiny">Seed: <code>${sessionSeed}</code></p>`;
+    html += `<div style="margin:10px 0;">
+                <button class="btn" onclick="toggleSection('rev1')">Toggle Module 1 Review</button>
+                <button class="btn" style="margin-left:8px" onclick="toggleSection('rev2')">Toggle Module 2 Review</button>
+              </div>`;
+    html += `<div id="rev1" style="display:block">${state.reviews[1]||'<div class="tiny">No data for Module 1.</div>'}</div>`;
+    html += `<div id="rev2" style="display:block; margin-top:16px">${state.reviews[2]||'<div class="tiny">No data for Module 2.</div>'}</div>`;
+    html += `<div style="margin-top:12px">
+               <button class="btn" onclick="location.reload()">New Test (new seed)</button>
+             </div>`;
+    sum.innerHTML = html;
+  }
+}
+
+function toggleSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = (el.style.display==='none') ? 'block' : 'none';
 }
 
 async function beginModule1(){
@@ -523,9 +588,14 @@ async function beginModule1(){
   state.answers = new Map();
   state.remaining = MODULE_TIME;
 
-  const built = buildPlayableModule(1,'base');
+  const built = buildModule(1,'base');
   state.items = built.items;
   state.gens  = built.gens;
+
+  if(state.gens.length===0){
+    show(0); // will present an error card
+    return;
+  }
 
   document.getElementById('status').textContent='Module 1 ready.';
   show(0);
@@ -540,9 +610,14 @@ function beginModule2(){
   state.answers = new Map();
   state.remaining = MODULE_TIME;
 
-  const built = buildPlayableModule(2, state.route);
+  const built = buildModule(2, state.route);
   state.items = built.items;
   state.gens  = built.gens;
+
+  if(state.gens.length===0){
+    show(0); // error card
+    return;
+  }
 
   document.getElementById('status').textContent='Module 2 ready.';
   show(0);
@@ -557,7 +632,7 @@ document.getElementById('btnPrev').addEventListener('click',()=>show(state.idx-1
 document.getElementById('btnNext').addEventListener('click',()=>show(state.idx+1));
 document.getElementById('btnSubmitModule').addEventListener('click', submitModule);
 
-/* Pop-outs */
+/* Pop-outs & drag */
 function enableDrag(popId){
   const pop=document.getElementById(popId);
   const head = pop.querySelector('.head');
